@@ -9,6 +9,8 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import About from "./pages/About";
 import Features from "./pages/Features";
+import GetStarted from "./pages/GetStarted";
+import Login from "./pages/Login";
 
 // Admin Pages
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -36,20 +38,23 @@ const ProtectedRoute = ({
   const { isAuthenticated, userRole } = useAuth();
   
   if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
   
   if (allowedRole === "both" || userRole === allowedRole) {
     return <>{children}</>;
   }
   
-  return <Navigate to="/" replace />;
+  return <Navigate to="/login" replace />;
 };
 
 // App Routing Logic
 const AppRoutes = () => (
   <Routes>
-    <Route path="/" element={<Index />} />
+    {/* Public Routes */}
+    <Route path="/" element={<GetStarted />} />
+    <Route path="/login" element={<Login />} />
+    <Route path="/index" element={<Index />} />
     <Route path="/about" element={<About />} />
     <Route path="/features" element={<Features />} />
     
