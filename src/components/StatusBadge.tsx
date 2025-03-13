@@ -1,21 +1,25 @@
 
 import { cn } from "@/lib/utils";
 
-type StatusType = 
+export type StatusType = 
   | "pending" 
   | "approved" 
   | "rejected" 
   | "open" 
   | "solved" 
   | "maintenance" 
-  | "online";
+  | "online"
+  | "high"
+  | "medium"
+  | "low";
 
 interface StatusBadgeProps {
   status: StatusType;
   className?: string;
+  children?: React.ReactNode;
 }
 
-export function StatusBadge({ status, className }: StatusBadgeProps) {
+export function StatusBadge({ status, className, children }: StatusBadgeProps) {
   const getStatusClasses = () => {
     switch (status) {
       case "pending":
@@ -32,6 +36,12 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
         return "bg-indigo-100 text-indigo-800";
       case "online":
         return "bg-green-100 text-green-800";
+      case "high":
+        return "bg-red-100 text-red-800";
+      case "medium":
+        return "bg-yellow-100 text-yellow-800";
+      case "low":
+        return "bg-blue-100 text-blue-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -45,7 +55,7 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
         className
       )}
     >
-      {status.charAt(0).toUpperCase() + status.slice(1)}
+      {children || status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
   );
 }

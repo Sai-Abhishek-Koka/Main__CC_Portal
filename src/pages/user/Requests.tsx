@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { StatusBadge } from "@/components/StatusBadge";
+import { StatusBadge, StatusType } from "@/components/StatusBadge";
 import { toast } from "sonner";
 
 const Requests = () => {
@@ -24,21 +24,21 @@ const Requests = () => {
       title: "Server Access", 
       description: "Need access to new server", 
       priority: "High", 
-      status: "pending"
+      status: "pending" as StatusType
     },
     { 
       id: 2, 
       title: "Software Installation", 
       description: "Installation of MATLAB", 
       priority: "Medium", 
-      status: "approved"
+      status: "approved" as StatusType
     },
     { 
       id: 3, 
       title: "Access to Database", 
       description: "Require access to Oracle DB", 
       priority: "Low", 
-      status: "rejected"
+      status: "rejected" as StatusType
     },
   ];
 

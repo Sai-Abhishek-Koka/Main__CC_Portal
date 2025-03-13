@@ -2,7 +2,7 @@
 import { Header } from "@/components/Header";
 import { Sidebar } from "@/components/Sidebar";
 import { PageTransition } from "@/components/PageTransition";
-import { StatusBadge } from "@/components/StatusBadge";
+import { StatusBadge, StatusType } from "@/components/StatusBadge";
 
 const Servers = () => {
   // Mock accessible servers data
@@ -11,19 +11,19 @@ const Servers = () => {
       id: 1, 
       name: "Database Server", 
       ipAddress: "192.168.1.10", 
-      status: "online"
+      status: "online" as StatusType
     },
     { 
       id: 2, 
       name: "Application Server", 
       ipAddress: "192.168.1.20", 
-      status: "maintenance"
+      status: "maintenance" as StatusType
     },
     { 
       id: 3, 
       name: "Storage Server", 
       ipAddress: "192.168.1.30", 
-      status: "online"
+      status: "online" as StatusType
     },
   ];
 

@@ -73,7 +73,7 @@ const Issues = () => {
                           <td>{issue.description}</td>
                           <td>
                             <StatusBadge 
-                              status={issue.priority === "High" ? "open" : "maintenance"} 
+                              status={issue.priority.toLowerCase() as "high" | "medium" | "low"}
                             >
                               {issue.priority}
                             </StatusBadge>

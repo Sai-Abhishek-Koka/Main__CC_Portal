@@ -77,13 +77,7 @@ const Requests = () => {
                           <td>{request.description}</td>
                           <td>
                             <StatusBadge 
-                              status={
-                                request.priority === "High" 
-                                  ? "pending" 
-                                  : request.priority === "Medium" 
-                                    ? "maintenance" 
-                                    : "approved"
-                              } 
+                              status={request.priority.toLowerCase() as "high" | "medium" | "low"}
                             >
                               {request.priority}
                             </StatusBadge>

@@ -3,7 +3,7 @@ import { Header } from "@/components/Header";
 import { Sidebar } from "@/components/Sidebar";
 import { PageTransition } from "@/components/PageTransition";
 import { Button } from "@/components/ui/button";
-import { StatusBadge } from "@/components/StatusBadge";
+import { StatusBadge, StatusType } from "@/components/StatusBadge";
 import { toast } from "sonner";
 
 const Servers = () => {
@@ -14,21 +14,21 @@ const Servers = () => {
       name: "Database Server", 
       ipAddress: "192.168.1.10", 
       uptime: "24hrs", 
-      status: "online"
+      status: "online" as StatusType
     },
     { 
       id: 2, 
       name: "Application Server", 
       ipAddress: "192.168.1.20", 
       uptime: "12hrs", 
-      status: "maintenance"
+      status: "maintenance" as StatusType
     },
     { 
       id: 3, 
       name: "Storage Server", 
       ipAddress: "192.168.1.30", 
       uptime: "7d 12hrs", 
-      status: "online"
+      status: "online" as StatusType
     },
   ];
 

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { StatusBadge } from "@/components/StatusBadge";
+import { StatusBadge, StatusType } from "@/components/StatusBadge";
 import { toast } from "sonner";
 
 const Issues = () => {
@@ -24,21 +24,21 @@ const Issues = () => {
       title: "Wi-Fi Not Working", 
       description: "Unable to connect to campus Wi-Fi", 
       priority: "High", 
-      status: "open"
+      status: "open" as StatusType
     },
     { 
       id: 2, 
       title: "Server Downtime", 
       description: "The research server is down affecting project work", 
       priority: "Medium", 
-      status: "solved"
+      status: "solved" as StatusType
     },
     { 
       id: 3, 
       title: "Printer Issue", 
       description: "Cannot connect to the department printer", 
       priority: "Low", 
-      status: "open"
+      status: "open" as StatusType
     },
   ];
 
