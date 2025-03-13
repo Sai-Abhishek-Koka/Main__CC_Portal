@@ -35,7 +35,7 @@ const Servers = () => {
       <PageTransition>
         <main className="pt-24 pl-72 pr-8 pb-16 animate-fade-in">
           <div className="max-w-6xl">
-            <section>
+            <section className="bg-blue-50/80 p-8 rounded-lg shadow-sm">
               <h1 className="text-3xl font-semibold mb-6">My Servers</h1>
               
               <p className="text-muted-foreground mb-6">

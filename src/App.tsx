@@ -7,6 +7,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import About from "./pages/About";
+import Features from "./pages/Features";
 
 // Admin Pages
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -48,6 +50,8 @@ const ProtectedRoute = ({
 const AppRoutes = () => (
   <Routes>
     <Route path="/" element={<Index />} />
+    <Route path="/about" element={<About />} />
+    <Route path="/features" element={<Features />} />
     
     {/* Admin Routes */}
     <Route 
