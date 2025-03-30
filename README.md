@@ -49,7 +49,12 @@ JWT_SECRET=your_secret_key_here
 PORT=5000
 ```
 
-4. Create a MySQL database named `command_center` (or the name you specified in the .env file)
+4. Create a MySQL database by running the initialization script:
+```
+mysql -u root -p < database/init.sql
+```
+
+Or you can execute the SQL commands in the `server/database/init.sql` file using a MySQL client.
 
 5. Start the server:
 ```
@@ -58,7 +63,7 @@ npm run dev
 
 ## Default Users
 
-The system automatically creates two default users on first startup:
+The system comes with two default users:
 
 1. Admin User:
    - Username: admin

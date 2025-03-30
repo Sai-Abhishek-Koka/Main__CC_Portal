@@ -1,10 +1,10 @@
 
 const express = require('express');
 const cors = require('cors');
-const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
+const { pool, testConnection } = require('./database/db');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -13,60 +13,10 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// MySQL connection pool
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'command_center',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-});
-
 // Initialize database tables
 async function initDatabase() {
   try {
-    const connection = await pool.getConnection();
-    
-    // Create users table
-    await connection.execute(`
-      CREATE TABLE IF NOT EXISTS users (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        username VARCHAR(50) NOT NULL UNIQUE,
-        password VARCHAR(255) NOT NULL,
-        email VARCHAR(100),
-        role ENUM('user', 'admin') NOT NULL DEFAULT 'user',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )
-    `);
-    
-    // Check if default admin exists
-    const [adminRows] = await connection.execute('SELECT * FROM users WHERE username = ?', ['admin']);
-    if (adminRows.length === 0) {
-      // Create default admin user
-      const hashedAdminPassword = await bcrypt.hash('admin123', 10);
-      await connection.execute(
-        'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
-        ['admin', hashedAdminPassword, 'admin']
-      );
-      console.log('Default admin user created');
-    }
-    
-    // Check if default regular user exists
-    const [userRows] = await connection.execute('SELECT * FROM users WHERE username = ?', ['user']);
-    if (userRows.length === 0) {
-      // Create default regular user
-      const hashedUserPassword = await bcrypt.hash('user123', 10);
-      await connection.execute(
-        'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
-        ['user', hashedUserPassword, 'user']
-      );
-      console.log('Default regular user created');
-    }
-    
-    connection.release();
+    await testConnection();
     console.log('Database initialized successfully');
   } catch (error) {
     console.error('Database initialization error:', error);
@@ -138,6 +88,57 @@ const verifyToken = (req, res, next) => {
 // Protected route example
 app.get('/api/user/profile', verifyToken, (req, res) => {
   res.status(200).json({ user: req.user });
+});
+
+// API route to get servers
+app.get('/api/servers', verifyToken, async (req, res) => {
+  try {
+    const [servers] = await pool.execute('SELECT * FROM servers');
+    res.status(200).json(servers);
+  } catch (error) {
+    console.error('Error fetching servers:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// API route to get user requests
+app.get('/api/requests', verifyToken, async (req, res) => {
+  try {
+    let query = 'SELECT * FROM requests';
+    const params = [];
+    
+    // If user role is not admin, only show their requests
+    if (req.user.role !== 'admin') {
+      query += ' WHERE user_id = ?';
+      params.push(req.user.id);
+    }
+    
+    const [requests] = await pool.execute(query, params);
+    res.status(200).json(requests);
+  } catch (error) {
+    console.error('Error fetching requests:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// API route to get issues
+app.get('/api/issues', verifyToken, async (req, res) => {
+  try {
+    let query = 'SELECT * FROM issues';
+    const params = [];
+    
+    // If user role is not admin, only show their issues
+    if (req.user.role !== 'admin') {
+      query += ' WHERE user_id = ?';
+      params.push(req.user.id);
+    }
+    
+    const [issues] = await pool.execute(query, params);
+    res.status(200).json(issues);
+  } catch (error) {
+    console.error('Error fetching issues:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
 });
 
 // Initialize database and start server
