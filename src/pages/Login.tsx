@@ -7,32 +7,37 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const Login = () => {
-  const { isAuthenticated, userRole, login } = useAuth();
+  const { isAuthenticated, userRole, login, isLoading } = useAuth();
   const navigate = useNavigate();
   
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
   // If already authenticated, redirect to appropriate dashboard
   if (isAuthenticated) {
     return <Navigate to={userRole === "admin" ? "/admin/dashboard" : "/user/dashboard"} />;
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     
-    // Simulate network request
-    setTimeout(() => {
-      login(username, password, rememberMe);
-      setIsLoading(false);
-    }, 800);
+    if (!username || !password) {
+      toast.error("Please enter both username and password");
+      return;
+    }
+    
+    try {
+      await login(username, password, rememberMe);
+    } catch (error) {
+      // Error is handled in the login function
+      console.error("Login submission error:", error);
+    }
   };
 
   return (
@@ -99,12 +104,23 @@ const Login = () => {
                 className="w-full bg-gradient-to-r from-blue-600 to-indigo-600"
                 disabled={isLoading}
               >
-                {isLoading ? "Signing in..." : "Login"}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : "Login"}
               </Button>
               
               <div className="text-center text-sm text-muted-foreground">
                 <p>
-                  Try "admin" or "user" as username with any password
+                  Try "admin" or "user" as username with their respective passwords
+                </p>
+                <p className="mt-1 font-medium">
+                  admin / admin123
+                </p>
+                <p className="font-medium">
+                  user / user123
                 </p>
               </div>
             </form>
