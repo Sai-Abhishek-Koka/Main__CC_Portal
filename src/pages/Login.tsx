@@ -18,6 +18,7 @@ const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [loginError, setLoginError] = useState("");
 
   // If already authenticated, redirect to appropriate dashboard
   if (isAuthenticated) {
@@ -26,6 +27,7 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoginError("");
     
     if (!username || !password) {
       toast.error("Please enter both username and password");
@@ -35,8 +37,10 @@ const Login = () => {
     try {
       await login(username, password, rememberMe);
     } catch (error) {
-      // Error is handled in the login function
       console.error("Login submission error:", error);
+      if (error instanceof Error) {
+        setLoginError(error.message);
+      }
     }
   };
 
@@ -88,6 +92,12 @@ const Login = () => {
                 />
               </div>
               
+              {loginError && (
+                <div className="p-3 rounded bg-red-50 text-red-600 text-sm">
+                  {loginError}
+                </div>
+              )}
+              
               <div className="flex items-center space-x-2">
                 <Checkbox 
                   id="remember-me" 
@@ -114,7 +124,7 @@ const Login = () => {
               
               <div className="text-center text-sm text-muted-foreground">
                 <p>
-                  Try "admin" or "user" as username with their respective passwords
+                  Try these test credentials:
                 </p>
                 <p className="mt-1 font-medium">
                   admin / admin123

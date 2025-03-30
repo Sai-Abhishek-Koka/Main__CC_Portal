@@ -4,7 +4,7 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
-const { pool, testConnection, getUserByUsername, getUsers } = require('./database/db');
+const { pool, testConnection, getUserByUsername, getUsers, createTestUsers } = require('./database/db');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -17,6 +17,8 @@ app.use(express.json());
 async function initDatabase() {
   try {
     await testConnection();
+    // Create test users after connection is established
+    await createTestUsers();
     console.log('Database initialized successfully');
   } catch (error) {
     console.error('Database initialization error:', error);
@@ -36,12 +38,14 @@ app.post('/api/auth/login', async (req, res) => {
     const user = await getUserByUsername(username);
     
     if (!user) {
+      console.log(`Login attempt failed: User "${username}" not found`);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     
     const isPasswordValid = await bcrypt.compare(password, user.password);
     
     if (!isPasswordValid) {
+      console.log(`Login attempt failed: Invalid password for user "${username}"`);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     
@@ -56,6 +60,8 @@ app.post('/api/auth/login', async (req, res) => {
       process.env.JWT_SECRET || 'your_jwt_secret',
       { expiresIn: '24h' }
     );
+    
+    console.log(`Login successful for user "${username}" with role "${user.role}"`);
     
     res.status(200).json({
       message: 'Login successful',

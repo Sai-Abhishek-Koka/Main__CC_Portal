@@ -37,6 +37,40 @@ async function getUserByUsername(username) {
   }
 }
 
+// Create test users if they don't exist
+async function createTestUsers() {
+  try {
+    const bcrypt = require('bcryptjs');
+    
+    // Check if admin user exists
+    const adminExists = await getUserByUsername('admin');
+    if (!adminExists) {
+      const adminPassword = await bcrypt.hash('admin123', 10);
+      await pool.execute(
+        'INSERT INTO users (username, password, email, role, full_name, department) VALUES (?, ?, ?, ?, ?, ?)',
+        ['admin', adminPassword, 'admin@example.com', 'admin', 'Admin User', 'IT']
+      );
+      console.log('Created admin test user');
+    }
+    
+    // Check if regular user exists
+    const userExists = await getUserByUsername('user');
+    if (!userExists) {
+      const userPassword = await bcrypt.hash('user123', 10);
+      await pool.execute(
+        'INSERT INTO users (username, password, email, role, full_name, department) VALUES (?, ?, ?, ?, ?, ?)',
+        ['user', userPassword, 'user@example.com', 'user', 'Regular User', 'Engineering']
+      );
+      console.log('Created regular test user');
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error creating test users:', error);
+    return false;
+  }
+}
+
 // Get all users with pagination and filtering
 async function getUsers(limit = 20, offset = 0, role = null) {
   try {
@@ -63,5 +97,6 @@ module.exports = {
   pool,
   testConnection,
   getUserByUsername,
-  getUsers
+  getUsers,
+  createTestUsers
 };

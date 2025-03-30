@@ -46,6 +46,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setIsLoading(true);
       
+      console.log(`Attempting login for user: ${username}`);
+      
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: {
@@ -57,14 +59,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const data = await response.json();
       
       if (!response.ok) {
+        console.error('Login failed:', data);
         throw new Error(data.message || 'Login failed');
       }
       
       setIsAuthenticated(true);
       setUserRole(data.user.role);
       
-      // Store auth state if rememberMe is checked or always for simplicity
-      if (rememberMe || true) {
+      // Store auth state if rememberMe is checked
+      if (rememberMe) {
         localStorage.setItem("token", data.token);
         localStorage.setItem("userRole", data.user.role);
       }
@@ -76,6 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('Login error:', error);
       toast.error(error instanceof Error ? error.message : 'Authentication failed');
+      throw error;
     } finally {
       setIsLoading(false);
     }
