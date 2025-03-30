@@ -4,7 +4,7 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
-const { pool, testConnection } = require('./database/db');
+const { pool, testConnection, getUserByUsername, getUsers } = require('./database/db');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -33,13 +33,12 @@ app.post('/api/auth/login', async (req, res) => {
     }
     
     // Check if the user exists
-    const [rows] = await pool.execute('SELECT * FROM users WHERE username = ?', [username]);
+    const user = await getUserByUsername(username);
     
-    if (rows.length === 0) {
+    if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     
-    const user = rows[0];
     const isPasswordValid = await bcrypt.compare(password, user.password);
     
     if (!isPasswordValid) {
@@ -48,7 +47,12 @@ app.post('/api/auth/login', async (req, res) => {
     
     // Generate JWT token
     const token = jwt.sign(
-      { id: user.id, username: user.username, role: user.role },
+      { 
+        id: user.id, 
+        username: user.username, 
+        role: user.role,
+        fullName: user.full_name
+      },
       process.env.JWT_SECRET || 'your_jwt_secret',
       { expiresIn: '24h' }
     );
@@ -59,7 +63,8 @@ app.post('/api/auth/login', async (req, res) => {
       user: {
         id: user.id,
         username: user.username,
-        role: user.role
+        role: user.role,
+        fullName: user.full_name
       }
     });
   } catch (error) {
@@ -85,9 +90,32 @@ const verifyToken = (req, res, next) => {
   }
 };
 
-// Protected route example
+// Admin middleware
+const isAdmin = (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+  }
+  next();
+};
+
+// Protected route - User profile
 app.get('/api/user/profile', verifyToken, (req, res) => {
   res.status(200).json({ user: req.user });
+});
+
+// Protected route - Get all users (admin only)
+app.get('/api/users', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = parseInt(req.query.offset) || 0;
+    const role = req.query.role;
+    
+    const users = await getUsers(limit, offset, role);
+    res.status(200).json(users);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
 });
 
 // API route to get servers
@@ -104,14 +132,16 @@ app.get('/api/servers', verifyToken, async (req, res) => {
 // API route to get user requests
 app.get('/api/requests', verifyToken, async (req, res) => {
   try {
-    let query = 'SELECT * FROM requests';
+    let query = 'SELECT r.*, u.username FROM requests r JOIN users u ON r.user_id = u.id';
     const params = [];
     
     // If user role is not admin, only show their requests
     if (req.user.role !== 'admin') {
-      query += ' WHERE user_id = ?';
+      query += ' WHERE r.user_id = ?';
       params.push(req.user.id);
     }
+    
+    query += ' ORDER BY r.created_at DESC';
     
     const [requests] = await pool.execute(query, params);
     res.status(200).json(requests);
@@ -124,19 +154,47 @@ app.get('/api/requests', verifyToken, async (req, res) => {
 // API route to get issues
 app.get('/api/issues', verifyToken, async (req, res) => {
   try {
-    let query = 'SELECT * FROM issues';
+    let query = 'SELECT i.*, u.username, s.name as server_name FROM issues i ' +
+                'JOIN users u ON i.user_id = u.id ' +
+                'LEFT JOIN servers s ON i.server_id = s.id';
     const params = [];
     
     // If user role is not admin, only show their issues
     if (req.user.role !== 'admin') {
-      query += ' WHERE user_id = ?';
+      query += ' WHERE i.user_id = ?';
       params.push(req.user.id);
     }
+    
+    query += ' ORDER BY i.priority DESC, i.created_at DESC';
     
     const [issues] = await pool.execute(query, params);
     res.status(200).json(issues);
   } catch (error) {
     console.error('Error fetching issues:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// API route to get resource allocations
+app.get('/api/allocations', verifyToken, async (req, res) => {
+  try {
+    let query = 'SELECT ra.*, u.username, s.name as server_name FROM resource_allocations ra ' +
+                'JOIN users u ON ra.user_id = u.id ' +
+                'JOIN servers s ON ra.server_id = s.id';
+    const params = [];
+    
+    // If user role is not admin, only show their allocations
+    if (req.user.role !== 'admin') {
+      query += ' WHERE ra.user_id = ?';
+      params.push(req.user.id);
+    }
+    
+    query += ' ORDER BY ra.allocation_start DESC';
+    
+    const [allocations] = await pool.execute(query, params);
+    res.status(200).json(allocations);
+  } catch (error) {
+    console.error('Error fetching allocations:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
