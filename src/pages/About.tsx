@@ -7,10 +7,13 @@ import { Sidebar } from "@/components/Sidebar";
 const About = () => {
   const { isAuthenticated, userRole } = useAuth();
   
+  // Convert userRole to the format expected by Sidebar component
+  const sidebarRole = userRole === "student" ? "user" : (userRole || "user");
+  
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      {isAuthenticated && <Sidebar role={userRole || "user"} />}
+      {isAuthenticated && <Sidebar role={sidebarRole} />}
       
       <PageTransition>
         <main className={`pt-24 pb-16 px-8 animate-fade-in ${isAuthenticated ? 'pl-72' : ''}`}>

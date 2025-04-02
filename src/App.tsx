@@ -100,11 +100,11 @@ const AppRoutes = () => (
       } 
     />
     
-    {/* User Routes */}
+    {/* User Routes - updating to use "student" instead of "user" */}
     <Route 
       path="/user/dashboard" 
       element={
-        <ProtectedRoute allowedRole="user">
+        <ProtectedRoute allowedRole="student">
           <UserDashboard />
         </ProtectedRoute>
       } 
@@ -112,7 +112,7 @@ const AppRoutes = () => (
     <Route 
       path="/user/requests" 
       element={
-        <ProtectedRoute allowedRole="user">
+        <ProtectedRoute allowedRole="student">
           <UserRequests />
         </ProtectedRoute>
       } 
@@ -120,7 +120,7 @@ const AppRoutes = () => (
     <Route 
       path="/user/issues" 
       element={
-        <ProtectedRoute allowedRole="user">
+        <ProtectedRoute allowedRole="student">
           <UserIssues />
         </ProtectedRoute>
       } 
@@ -128,7 +128,7 @@ const AppRoutes = () => (
     <Route 
       path="/user/servers" 
       element={
-        <ProtectedRoute allowedRole="user">
+        <ProtectedRoute allowedRole="student">
           <UserServers />
         </ProtectedRoute>
       } 

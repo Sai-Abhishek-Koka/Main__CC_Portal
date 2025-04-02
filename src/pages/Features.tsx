@@ -18,6 +18,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 const Features = () => {
   const { isAuthenticated, userRole } = useAuth();
   
+  // Convert userRole to the format expected by Sidebar component
+  const sidebarRole = userRole === "student" ? "user" : (userRole || "user");
+  
   // Feature items
   const features = [
     {
@@ -65,7 +68,7 @@ const Features = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      {isAuthenticated && <Sidebar role={userRole || "user"} />}
+      {isAuthenticated && <Sidebar role={sidebarRole} />}
       
       <PageTransition>
         <main className={`pt-24 pb-16 px-8 animate-fade-in ${isAuthenticated ? 'pl-72' : ''}`}>
