@@ -27,13 +27,13 @@ import UserServers from "./pages/user/Servers";
 
 const queryClient = new QueryClient();
 
-// Protected Route Component
+// Update the ProtectedRoute component to allow "student" role
 const ProtectedRoute = ({ 
   children, 
   allowedRole 
 }: { 
   children: React.ReactNode; 
-  allowedRole: "admin" | "user" | "both";
+  allowedRole: "admin" | "student" | "both";
 }) => {
   const { isAuthenticated, userRole } = useAuth();
   
@@ -41,7 +41,7 @@ const ProtectedRoute = ({
     return <Navigate to="/login" replace />;
   }
   
-  if (allowedRole === "both" || userRole === allowedRole) {
+  if (allowedRole === "both" || userRole === allowedRole || (allowedRole === "student" && userRole === "student")) {
     return <>{children}</>;
   }
   

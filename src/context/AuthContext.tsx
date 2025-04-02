@@ -3,7 +3,8 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-type UserRole = "admin" | "student" | null;
+// Update UserRole type to include "student" since we've changed our database schema
+export type UserRole = "admin" | "student" | null;
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -56,13 +57,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log(`Attempting login for user: ${username}`);
       
+      // Add timeout to the fetch request to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ username, password }),
+        signal: controller.signal
+      }).catch(error => {
+        if (error.name === 'AbortError') {
+          throw new Error('Login request timed out. Please try again.');
+        }
+        throw new Error('Connection refused. Is the server running?');
       });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response) {
+        throw new Error('Could not connect to the server. Please check if it\'s running.');
+      }
       
       const data = await response.json();
       
@@ -90,7 +107,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.success(`Welcome, ${data.user.name}!`);
     } catch (error) {
       console.error('Login error:', error);
-      toast.error(error instanceof Error ? error.message : 'Authentication failed');
+      let errorMessage = 'Authentication failed';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Connection refused') || error.message.includes('Failed to fetch')) {
+          errorMessage = 'Cannot connect to the server. Please ensure the server is running at ' + API_URL;
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast.error(errorMessage);
       throw error;
     } finally {
       setIsLoading(false);

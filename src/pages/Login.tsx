@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState } from "react";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -39,7 +39,11 @@ const Login = () => {
     } catch (error) {
       console.error("Login submission error:", error);
       if (error instanceof Error) {
-        setLoginError(error.message);
+        if (error.message.includes('Connection refused') || error.message.includes('Failed to fetch')) {
+          setLoginError("Cannot connect to the server. Please make sure it's running at http://localhost:5000.");
+        } else {
+          setLoginError(error.message);
+        }
       }
     }
   };
@@ -93,8 +97,17 @@ const Login = () => {
               </div>
               
               {loginError && (
-                <div className="p-3 rounded bg-red-50 text-red-600 text-sm">
-                  {loginError}
+                <div className="p-4 rounded bg-amber-50 text-amber-700 text-sm flex items-start">
+                  <AlertTriangle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+                  <div>
+                    {loginError}
+                    {loginError.includes("server") && (
+                      <div className="mt-2 text-xs">
+                        1. Make sure the server is running with <code className="bg-amber-100 p-1 rounded">npm run server</code><br/>
+                        2. The server should be running on http://localhost:5000
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
               
@@ -127,10 +140,10 @@ const Login = () => {
                   Try these test credentials:
                 </p>
                 <p className="mt-1 font-medium">
-                  admin / admin123
+                  admin001 / admin123
                 </p>
                 <p className="font-medium">
-                  user / user123
+                  student001 / user123
                 </p>
               </div>
             </form>
