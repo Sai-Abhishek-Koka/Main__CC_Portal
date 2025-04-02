@@ -1,6 +1,7 @@
 
 const mysql = require('mysql2/promise');
 require('dotenv').config();
+const bcrypt = require('bcryptjs');
 
 // Create a connection pool
 const pool = mysql.createPool({
@@ -70,12 +71,11 @@ async function getUserWithRoleInfo(userID) {
 // Create test users if they don't exist
 async function createTestUsers() {
   try {
-    const bcrypt = require('bcryptjs');
-    
     // Check if admin user exists
     const adminExists = await getUserByUsername('admin001');
     if (!adminExists) {
-      const adminPassword = await bcrypt.hash('admin123', 10);
+      // Use a lower cost factor (8) for bcrypt to generate shorter hashes
+      const adminPassword = await bcrypt.hash('admin123', 8);
       await pool.execute(
         'INSERT INTO users (userID, name, role, email, phone, password) VALUES (?, ?, ?, ?, ?, ?)',
         ['admin001', 'System Administrator', 'admin', 'admin@example.com', '123-456-7890', adminPassword]
@@ -87,12 +87,20 @@ async function createTestUsers() {
       );
       
       console.log('Created admin test user');
+    } else {
+      // Update the existing admin password for testing
+      const adminPassword = await bcrypt.hash('admin123', 8);
+      await pool.execute(
+        'UPDATE users SET password = ? WHERE userID = ?',
+        [adminPassword, 'admin001']
+      );
+      console.log('Updated admin test user password');
     }
     
     // Check if student user exists
     const userExists = await getUserByUsername('student001');
     if (!userExists) {
-      const userPassword = await bcrypt.hash('user123', 10);
+      const userPassword = await bcrypt.hash('user123', 8);
       await pool.execute(
         'INSERT INTO users (userID, name, role, email, phone, password) VALUES (?, ?, ?, ?, ?, ?)',
         ['student001', 'Alex Martinez', 'student', 'alex@example.com', '987-654-3210', userPassword]
@@ -104,6 +112,14 @@ async function createTestUsers() {
       );
       
       console.log('Created student test user');
+    } else {
+      // Update the existing student password for testing
+      const userPassword = await bcrypt.hash('user123', 8);
+      await pool.execute(
+        'UPDATE users SET password = ? WHERE userID = ?',
+        [userPassword, 'student001']
+      );
+      console.log('Updated student test user password');
     }
     
     return true;

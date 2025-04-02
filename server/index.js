@@ -42,6 +42,10 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     
+    // Log the stored hashed password for debugging
+    console.log(`Stored password for ${username}: ${user.password.substring(0, 20)}...`);
+    console.log(`Password attempt: ${password}`);
+    
     const isPasswordValid = await bcrypt.compare(password, user.password);
     
     if (!isPasswordValid) {
@@ -53,9 +57,9 @@ app.post('/api/auth/login', async (req, res) => {
     const token = jwt.sign(
       { 
         id: user.id, 
-        username: user.username, 
+        username: user.userID, 
         role: user.role,
-        fullName: user.full_name
+        name: user.name  
       },
       process.env.JWT_SECRET || 'your_jwt_secret',
       { expiresIn: '24h' }
@@ -67,10 +71,10 @@ app.post('/api/auth/login', async (req, res) => {
       message: 'Login successful',
       token,
       user: {
-        id: user.id,
-        username: user.username,
+        userID: user.userID,
+        username: user.userID,
         role: user.role,
-        fullName: user.full_name
+        name: user.name
       }
     });
   } catch (error) {
