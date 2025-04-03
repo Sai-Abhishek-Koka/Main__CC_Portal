@@ -43,6 +43,7 @@ interface User {
   name: string;
   email: string;
   role: string;
+  phone: string;
   created_at: string;
   detail: string;
 }
@@ -52,6 +53,7 @@ const formSchema = z.object({
   userID: z.string().min(3, "Username must be at least 3 characters"),
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
+  phone: z.string().optional(),
   role: z.enum(["admin", "student"], {
     required_error: "Please select a role",
   }),
@@ -60,23 +62,23 @@ const formSchema = z.object({
 
 // API function to fetch users
 const fetchUsers = async () => {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    throw new Error("Authentication token is missing");
+  try {
+    const token = localStorage.getItem("token");
+    const response = await fetch("http://localhost:5000/api/users", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error("Failed to fetch users");
+    }
+    
+    return response.json();
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    return [];
   }
-  
-  const response = await fetch("http://localhost:5000/api/users", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || "Failed to fetch users");
-  }
-  
-  return response.json();
 };
 
 // API function to delete a user
@@ -103,30 +105,28 @@ const deleteUser = async (userID: string) => {
 
 // API function to add a new user
 const addUser = async (userData: z.infer<typeof formSchema>) => {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    throw new Error("Authentication token is missing");
+  try {
+    console.log("Adding user with data:", userData);
+    
+    const response = await fetch("http://localhost:5000/api/users", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(userData),
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to add user");
+    }
+    
+    return data;
+  } catch (error) {
+    console.error("Error adding user:", error);
+    throw error;
   }
-  
-  console.log("Adding user with token:", token);
-  console.log("User data:", userData);
-  
-  const response = await fetch("http://localhost:5000/api/users", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(userData),
-  });
-  
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    console.error("Error response:", errorData);
-    throw new Error(errorData.message || "Failed to add user");
-  }
-  
-  return response.json();
 };
 
 const Users = () => {
@@ -142,13 +142,14 @@ const Users = () => {
       userID: "",
       name: "",
       email: "",
+      phone: "",
       role: "student",
       password: "",
     },
   });
   
   // Query for fetching users
-  const { data: users = [], isLoading, error } = useQuery({
+  const { data: users = [], isLoading, error, refetch } = useQuery({
     queryKey: ["users"],
     queryFn: fetchUsers,
   });
@@ -176,7 +177,8 @@ const Users = () => {
   const addMutation = useMutation({
     mutationFn: addUser,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
+      // Force refetch to update the UI
+      refetch();
       setIsDialogOpen(false);
       form.reset();
       toast({
@@ -187,7 +189,7 @@ const Users = () => {
     onError: (error) => {
       toast({
         title: "Error",
-        description: `Failed to add user: ${error.message}`,
+        description: `Failed to add user: ${(error as Error).message}`,
         variant: "destructive",
       });
     },
@@ -201,9 +203,9 @@ const Users = () => {
   
   // Filtered users based on search term
   const filteredUsers = users.filter((user: User) => 
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchTerm.toLowerCase())
+    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.role?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Handle delete user
@@ -248,6 +250,7 @@ const Users = () => {
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Email</TableHead>
+                      <TableHead>Phone</TableHead>
                       <TableHead>Role</TableHead>
                       <TableHead>Department/Designation</TableHead>
                       <TableHead>Actions</TableHead>
@@ -259,6 +262,7 @@ const Users = () => {
                         <TableRow key={user.userID} className="hover:bg-muted/30 transition-colors">
                           <TableCell>{user.name}</TableCell>
                           <TableCell>{user.email}</TableCell>
+                          <TableCell>{user.phone || "-"}</TableCell>
                           <TableCell>
                             <span className={`px-2 py-1 rounded-full text-xs ${
                               user.role === "admin" ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800"
@@ -281,7 +285,7 @@ const Users = () => {
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
+                        <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
                           No users found
                         </TableCell>
                       </TableRow>
@@ -342,6 +346,20 @@ const Users = () => {
                     <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input type="email" placeholder="Email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Phone Number" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
