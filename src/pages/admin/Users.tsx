@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
@@ -35,6 +36,7 @@ import {
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useAuth } from "@/context/AuthContext";
 
 interface User {
   userID: string;
@@ -57,85 +59,14 @@ const formSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-const fetchUsers = async () => {
-  try {
-    const token = localStorage.getItem("token");
-    
-    console.log("Fetching users with token:", token ? "Token exists" : "No token");
-    
-    const response = await fetch("http://localhost:5000/api/users", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error("Error response from server:", errorData);
-      throw new Error(errorData.message || "Failed to fetch users");
-    }
-    
-    const data = await response.json();
-    console.log("Fetched users:", data);
-    return data;
-  } catch (error) {
-    console.error("Error fetching users:", error);
-    throw error;
-  }
-};
-
-const deleteUser = async (userID: string) => {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    throw new Error("Authentication token is missing");
-  }
-  
-  const response = await fetch(`http://localhost:5000/api/users/${userID}`, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || "Failed to delete user");
-  }
-  
-  return response.json();
-};
-
-const addUser = async (userData: z.infer<typeof formSchema>) => {
-  try {
-    console.log("Adding user with data:", userData);
-    
-    const response = await fetch("http://localhost:5000/api/users", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(userData),
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || "Failed to add user");
-    }
-    
-    console.log("User added successfully:", data);
-    return data;
-  } catch (error) {
-    console.error("Error adding user:", error);
-    throw error;
-  }
-};
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const Users = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuth();
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -148,6 +79,87 @@ const Users = () => {
       password: "",
     },
   });
+
+  // Updated fetchUsers function to use the auth context
+  const fetchUsers = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      
+      console.log("Fetching users with token:", token ? "Token exists" : "No token");
+      
+      if (!token) {
+        throw new Error("Authentication token is missing");
+      }
+      
+      const response = await fetch(`${API_URL}/users`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Error response from server:", errorData);
+        throw new Error(errorData.message || "Failed to fetch users");
+      }
+      
+      const data = await response.json();
+      console.log("Fetched users:", data);
+      return data;
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      throw error;
+    }
+  };
+  
+  // Updated deleteUser function to use API_URL
+  const deleteUser = async (userID: string) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("Authentication token is missing");
+    }
+    
+    const response = await fetch(`${API_URL}/users/${userID}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || "Failed to delete user");
+    }
+    
+    return response.json();
+  };
+  
+  // Updated addUser function to use API_URL
+  const addUser = async (userData: z.infer<typeof formSchema>) => {
+    try {
+      console.log("Adding user with data:", userData);
+      
+      const response = await fetch(`${API_URL}/users`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userData),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to add user");
+      }
+      
+      console.log("User added successfully:", data);
+      return data;
+    } catch (error) {
+      console.error("Error adding user:", error);
+      throw error;
+    }
+  };
   
   const { 
     data: users = [], 
@@ -158,16 +170,7 @@ const Users = () => {
     queryKey: ["users"],
     queryFn: fetchUsers,
     retry: 1,
-    meta: {
-      onError: (error: Error) => {
-        console.error("Error in useQuery:", error);
-        toast({
-          title: "Error loading users",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
-    }
+    enabled: isAuthenticated, // Only fetch when authenticated
   });
   
   const deleteMutation = useMutation({
@@ -215,7 +218,12 @@ const Users = () => {
   
   useEffect(() => {
     console.log("Current users state:", users);
-  }, [users]);
+    
+    // If authenticated, refetch users when the component mounts
+    if (isAuthenticated) {
+      refetch();
+    }
+  }, [users, isAuthenticated, refetch]);
   
   const filteredUsers = Array.isArray(users) ? users.filter((user: User) => 
     user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
