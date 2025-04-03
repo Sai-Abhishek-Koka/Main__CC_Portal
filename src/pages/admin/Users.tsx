@@ -60,14 +60,20 @@ const formSchema = z.object({
 
 // API function to fetch users
 const fetchUsers = async () => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    throw new Error("Authentication token is missing");
+  }
+  
   const response = await fetch("http://localhost:5000/api/users", {
     headers: {
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
+      Authorization: `Bearer ${token}`,
     },
   });
   
   if (!response.ok) {
-    throw new Error("Failed to fetch users");
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || "Failed to fetch users");
   }
   
   return response.json();
@@ -75,15 +81,21 @@ const fetchUsers = async () => {
 
 // API function to delete a user
 const deleteUser = async (userID: string) => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    throw new Error("Authentication token is missing");
+  }
+  
   const response = await fetch(`http://localhost:5000/api/users/${userID}`, {
     method: "DELETE",
     headers: {
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
+      Authorization: `Bearer ${token}`,
     },
   });
   
   if (!response.ok) {
-    throw new Error("Failed to delete user");
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || "Failed to delete user");
   }
   
   return response.json();
@@ -91,17 +103,27 @@ const deleteUser = async (userID: string) => {
 
 // API function to add a new user
 const addUser = async (userData: z.infer<typeof formSchema>) => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    throw new Error("Authentication token is missing");
+  }
+  
+  console.log("Adding user with token:", token);
+  console.log("User data:", userData);
+  
   const response = await fetch("http://localhost:5000/api/users", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(userData),
   });
   
   if (!response.ok) {
-    throw new Error("Failed to add user");
+    const errorData = await response.json().catch(() => ({}));
+    console.error("Error response:", errorData);
+    throw new Error(errorData.message || "Failed to add user");
   }
   
   return response.json();
@@ -173,6 +195,7 @@ const Users = () => {
   
   // Handle form submission
   const onSubmit = (values: z.infer<typeof formSchema>) => {
+    console.log("Submitting form with values:", values);
     addMutation.mutate(values);
   };
   

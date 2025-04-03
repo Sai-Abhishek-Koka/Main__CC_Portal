@@ -1,4 +1,3 @@
-
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 const bcrypt = require('bcryptjs');
@@ -156,12 +155,8 @@ async function createDummyUsers() {
       { userID: 'student013', name: 'Olivia Brown', role: 'student', email: 'olivia@example.com', department: 'Mathematics', year: 1 },
       { userID: 'student014', name: 'Liam Jones', role: 'student', email: 'liam@example.com', department: 'Engineering', year: 4 },
       { userID: 'student015', name: 'Ava Miller', role: 'student', email: 'ava@example.com', department: 'Chemistry', year: 2 },
-      { userID: 'student016', name: 'Lucas Davis', role: 'student', email: 'lucas@example.com', department: 'Biology', year: 3 },
-      { userID: 'student017', name: 'Sophia Garcia', role: 'student', email: 'sophia@example.com', department: 'Computer Science', year: 1 },
-      { userID: 'student018', name: 'Mason Rodriguez', role: 'student', email: 'mason@example.com', department: 'Physics', year: 2 },
       { userID: 'admin004', name: 'Isabella Martinez', role: 'admin', email: 'isabella@example.com', designation: 'Security Admin', researchArea: 'Cybersecurity' },
-      { userID: 'admin005', name: 'Ethan Wilson', role: 'admin', email: 'ethan@example.com', designation: 'Network Admin', researchArea: 'Network Architecture' },
-      { userID: 'admin006', name: 'Mia Anderson', role: 'admin', email: 'mia@example.com', designation: 'System Admin', researchArea: 'Cloud Computing' }
+      { userID: 'admin005', name: 'Ethan Wilson', role: 'admin', email: 'ethan@example.com', designation: 'Network Admin', researchArea: 'Network Architecture' }
     ];
     
     const password = await bcrypt.hash('password123', 8);

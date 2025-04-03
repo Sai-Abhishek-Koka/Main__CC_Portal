@@ -72,22 +72,27 @@ CREATE TABLE IF NOT EXISTS wifi_sessions (
 
 -- Insert admin users
 INSERT INTO users (userID, name, role, email, phone, password) VALUES 
-('admin001', 'System Administrator', 'admin', 'admin@example.com', '123-456-7890', '$2a$10$kHYM0s7ywfyGDGfbXJ6I.uFu0T3eeAHPZ30yEtgYyIKK1KFWDZeC.'),
-('admin002', 'John Smith', 'admin', 'john.admin@example.com', '123-456-7891', '$2a$10$kHYM0s7ywfyGDGfbXJ6I.uFu0T3eeAHPZ30yEtgYyIKK1KFWDZeC.'),
-('admin003', 'Sarah Johnson', 'admin', 'sarah.admin@example.com', '123-456-7892', '$2a$10$kHYM0s7ywfyGDGfbXJ6I.uFu0T3eeAHPZ30yEtgYyIKK1KFWDZeC.');
+('admin001', 'System Administrator', 'admin', 'admin@example.com', '123-456-7890', '$2a$08$kHYM0s7ywfyGDGfbXJ6I.uFu0T3eeAHPZ30yEtgYyIKK1KFWDZeC.'),
+('admin002', 'John Smith', 'admin', 'john.admin@example.com', '123-456-7891', '$2a$08$kHYM0s7ywfyGDGfbXJ6I.uFu0T3eeAHPZ30yEtgYyIKK1KFWDZeC.'),
+('admin003', 'Sarah Johnson', 'admin', 'sarah.admin@example.com', '123-456-7892', '$2a$08$kHYM0s7ywfyGDGfbXJ6I.uFu0T3eeAHPZ30yEtgYyIKK1KFWDZeC.');
 
 -- Insert student users
 INSERT INTO users (userID, name, role, email, phone, password) VALUES 
-('student001', 'Alex Martinez', 'student', 'alex@example.com', '987-654-3210', '$2a$10$SG1J1ZBVLU.ECETQnDqm6eBejdmjgsjHZD2q1CUG07HuI5LiH50Ty'),
-('student002', 'Jane Wilson', 'student', 'jane@example.com', '987-654-3211', '$2a$10$SG1J1ZBVLU.ECETQnDqm6eBejdmjgsjHZD2q1CUG07HuI5LiH50Ty'),
-('student003', 'Mike Taylor', 'student', 'mike@example.com', '987-654-3212', '$2a$10$SG1J1ZBVLU.ECETQnDqm6eBejdmjgsjHZD2q1CUG07HuI5LiH50Ty'),
-('student004', 'Susan Brown', 'student', 'susan@example.com', '987-654-3213', '$2a$10$SG1J1ZBVLU.ECETQnDqm6eBejdmjgsjHZD2q1CUG07HuI5LiH50Ty'),
-('student005', 'Raj Patel', 'student', 'raj@example.com', '987-654-3214', '$2a$10$SG1J1ZBVLU.ECETQnDqm6eBejdmjgsjHZD2q1CUG07HuI5LiH50Ty'),
-('student006', 'Emily Chen', 'student', 'emily@example.com', '987-654-3215', '$2a$10$SG1J1ZBVLU.ECETQnDqm6eBejdmjgsjHZD2q1CUG07HuI5LiH50Ty'),
-('student007', 'David Kim', 'student', 'david@example.com', '987-654-3216', '$2a$10$SG1J1ZBVLU.ECETQnDqm6eBejdmjgsjHZD2q1CUG07HuI5LiH50Ty'),
-('student008', 'Lisa Johnson', 'student', 'lisa@example.com', '987-654-3217', '$2a$10$SG1J1ZBVLU.ECETQnDqm6eBejdmjgsjHZD2q1CUG07HuI5LiH50Ty'),
-('student009', 'Tom Peters', 'student', 'tom@example.com', '987-654-3218', '$2a$10$SG1J1ZBVLU.ECETQnDqm6eBejdmjgsjHZD2q1CUG07HuI5LiH50Ty'),
-('student010', 'Maria Rodriguez', 'student', 'maria@example.com', '987-654-3219', '$2a$10$SG1J1ZBVLU.ECETQnDqm6eBejdmjgsjHZD2q1CUG07HuI5LiH50Ty');
+('student001', 'Alex Martinez', 'student', 'alex@example.com', '987-654-3210', '$2a$08$SG1J1ZBVLU.ECETQnDqm6eBejdmjgsjHZD2q1CUG07HuI5LiH50Ty'),
+('student002', 'Jane Wilson', 'student', 'jane@example.com', '987-654-3211', '$2a$08$SG1J1ZBVLU.ECETQnDqm6eBejdmjgsjHZD2q1CUG07HuI5LiH50Ty'),
+('student003', 'Mike Taylor', 'student', 'mike@example.com', '987-654-3212', '$2a$08$SG1J1ZBVLU.ECETQnDqm6eBejdmjgsjHZD2q1CUG07HuI5LiH50Ty'),
+('student004', 'Susan Brown', 'student', 'susan@example.com', '987-654-3213', '$2a$08$SG1J1ZBVLU.ECETQnDqm6eBejdmjgsjHZD2q1CUG07HuI5LiH50Ty'),
+('student005', 'Raj Patel', 'student', 'raj@example.com', '987-654-3214', '$2a$08$SG1J1ZBVLU.ECETQnDqm6eBejdmjgsjHZD2q1CUG07HuI5LiH50Ty'),
+('student006', 'Emily Chen', 'student', 'emily@example.com', '987-654-3215', '$2a$08$SG1J1ZBVLU.ECETQnDqm6eBejdmjgsjHZD2q1CUG07HuI5LiH50Ty'),
+('student007', 'David Kim', 'student', 'david@example.com', '987-654-3216', '$2a$08$SG1J1ZBVLU.ECETQnDqm6eBejdmjgsjHZD2q1CUG07HuI5LiH50Ty'),
+('student008', 'Lisa Johnson', 'student', 'lisa@example.com', '987-654-3217', '$2a$08$SG1J1ZBVLU.ECETQnDqm6eBejdmjgsjHZD2q1CUG07HuI5LiH50Ty'),
+('student009', 'Tom Peters', 'student', 'tom@example.com', '987-654-3218', '$2a$08$SG1J1ZBVLU.ECETQnDqm6eBejdmjgsjHZD2q1CUG07HuI5LiH50Ty'),
+('student010', 'Maria Rodriguez', 'student', 'maria@example.com', '987-654-3219', '$2a$08$SG1J1ZBVLU.ECETQnDqm6eBejdmjgsjHZD2q1CUG07HuI5LiH50Ty'),
+('student011', 'Emma Johnson', 'student', 'emma@example.com', '987-654-3220', '$2a$08$SG1J1ZBVLU.ECETQnDqm6eBejdmjgsjHZD2q1CUG07HuI5LiH50Ty'),
+('student012', 'Noah Williams', 'student', 'noah@example.com', '987-654-3221', '$2a$08$SG1J1ZBVLU.ECETQnDqm6eBejdmjgsjHZD2q1CUG07HuI5LiH50Ty'),
+('student013', 'Olivia Brown', 'student', 'olivia@example.com', '987-654-3222', '$2a$08$SG1J1ZBVLU.ECETQnDqm6eBejdmjgsjHZD2q1CUG07HuI5LiH50Ty'),
+('student014', 'Liam Jones', 'student', 'liam@example.com', '987-654-3223', '$2a$08$SG1J1ZBVLU.ECETQnDqm6eBejdmjgsjHZD2q1CUG07HuI5LiH50Ty'),
+('student015', 'Ava Miller', 'student', 'ava@example.com', '987-654-3224', '$2a$08$SG1J1ZBVLU.ECETQnDqm6eBejdmjgsjHZD2q1CUG07HuI5LiH50Ty');
 
 -- Insert into admins table
 INSERT INTO admins (userID, designation, researchArea) VALUES
@@ -106,7 +111,12 @@ INSERT INTO students (userID, department, year) VALUES
 ('student007', 'Operations', 4),
 ('student008', 'Research', 3),
 ('student009', 'Engineering', 2),
-('student010', 'Design', 1);
+('student010', 'Design', 1),
+('student011', 'Computer Science', 2),
+('student012', 'Physics', 3),
+('student013', 'Mathematics', 1),
+('student014', 'Engineering', 4),
+('student015', 'Chemistry', 2);
 
 -- Insert into admin_panel
 INSERT INTO admin_panel (adminID, report) VALUES
