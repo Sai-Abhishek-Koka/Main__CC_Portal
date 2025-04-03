@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
@@ -37,7 +36,6 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-// Define the user interface
 interface User {
   userID: string;
   name: string;
@@ -48,7 +46,6 @@ interface User {
   detail: string;
 }
 
-// Form schema for adding a new user
 const formSchema = z.object({
   userID: z.string().min(3, "Username must be at least 3 characters"),
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -60,7 +57,6 @@ const formSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-// API function to fetch users
 const fetchUsers = async () => {
   try {
     const token = localStorage.getItem("token");
@@ -88,7 +84,6 @@ const fetchUsers = async () => {
   }
 };
 
-// API function to delete a user
 const deleteUser = async (userID: string) => {
   const token = localStorage.getItem("token");
   if (!token) {
@@ -110,7 +105,6 @@ const deleteUser = async (userID: string) => {
   return response.json();
 };
 
-// API function to add a new user
 const addUser = async (userData: z.infer<typeof formSchema>) => {
   try {
     console.log("Adding user with data:", userData);
@@ -143,7 +137,6 @@ const Users = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // Form handling
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -156,7 +149,6 @@ const Users = () => {
     },
   });
   
-  // Query for fetching users - fixed to use the proper way to handle errors
   const { 
     data: users = [], 
     isLoading, 
@@ -166,19 +158,18 @@ const Users = () => {
     queryKey: ["users"],
     queryFn: fetchUsers,
     retry: 1,
-    onSettled: (data, error) => {
-      if (error) {
+    meta: {
+      onError: (error: Error) => {
         console.error("Error in useQuery:", error);
         toast({
           title: "Error loading users",
-          description: (error as Error).message,
+          description: error.message,
           variant: "destructive",
         });
       }
     }
   });
   
-  // Mutation for deleting a user
   const deleteMutation = useMutation({
     mutationFn: deleteUser,
     onSuccess: () => {
@@ -197,11 +188,9 @@ const Users = () => {
     },
   });
   
-  // Mutation for adding a user
   const addMutation = useMutation({
     mutationFn: addUser,
     onSuccess: () => {
-      // Force refetch to update the UI
       queryClient.invalidateQueries({ queryKey: ["users"] });
       setIsDialogOpen(false);
       form.reset();
@@ -219,25 +208,21 @@ const Users = () => {
     },
   });
   
-  // Handle form submission
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     console.log("Submitting form with values:", values);
     addMutation.mutate(values);
   };
   
-  // Log users when they change
   useEffect(() => {
     console.log("Current users state:", users);
   }, [users]);
   
-  // Filtered users based on search term
   const filteredUsers = Array.isArray(users) ? users.filter((user: User) => 
     user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.role?.toLowerCase().includes(searchTerm.toLowerCase())
   ) : [];
 
-  // Handle delete user
   const handleDeleteUser = (userID: string) => {
     if (window.confirm("Are you sure you want to delete this user?")) {
       deleteMutation.mutate(userID);
@@ -336,7 +321,6 @@ const Users = () => {
         </main>
       </PageTransition>
       
-      {/* Add User Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
