@@ -122,9 +122,80 @@ async function createTestUsers() {
       console.log('Updated student test user password');
     }
     
+    // Create additional dummy users for testing if they don't exist
+    const testUserCount = await countUsers();
+    if (testUserCount < 15) {
+      console.log('Creating additional test users...');
+      await createDummyUsers();
+    }
+    
     return true;
   } catch (error) {
     console.error('Error creating test users:', error);
+    return false;
+  }
+}
+
+// Count users in the database
+async function countUsers() {
+  try {
+    const [rows] = await pool.execute('SELECT COUNT(*) as count FROM users');
+    return rows[0].count;
+  } catch (error) {
+    console.error('Error counting users:', error);
+    return 0;
+  }
+}
+
+// Create dummy users for testing
+async function createDummyUsers() {
+  try {
+    const dummyUsers = [
+      { userID: 'student011', name: 'Emma Johnson', role: 'student', email: 'emma@example.com', department: 'Computer Science', year: 2 },
+      { userID: 'student012', name: 'Noah Williams', role: 'student', email: 'noah@example.com', department: 'Physics', year: 3 },
+      { userID: 'student013', name: 'Olivia Brown', role: 'student', email: 'olivia@example.com', department: 'Mathematics', year: 1 },
+      { userID: 'student014', name: 'Liam Jones', role: 'student', email: 'liam@example.com', department: 'Engineering', year: 4 },
+      { userID: 'student015', name: 'Ava Miller', role: 'student', email: 'ava@example.com', department: 'Chemistry', year: 2 },
+      { userID: 'student016', name: 'Lucas Davis', role: 'student', email: 'lucas@example.com', department: 'Biology', year: 3 },
+      { userID: 'student017', name: 'Sophia Garcia', role: 'student', email: 'sophia@example.com', department: 'Computer Science', year: 1 },
+      { userID: 'student018', name: 'Mason Rodriguez', role: 'student', email: 'mason@example.com', department: 'Physics', year: 2 },
+      { userID: 'admin004', name: 'Isabella Martinez', role: 'admin', email: 'isabella@example.com', designation: 'Security Admin', researchArea: 'Cybersecurity' },
+      { userID: 'admin005', name: 'Ethan Wilson', role: 'admin', email: 'ethan@example.com', designation: 'Network Admin', researchArea: 'Network Architecture' },
+      { userID: 'admin006', name: 'Mia Anderson', role: 'admin', email: 'mia@example.com', designation: 'System Admin', researchArea: 'Cloud Computing' }
+    ];
+    
+    const password = await bcrypt.hash('password123', 8);
+    
+    for (const user of dummyUsers) {
+      // Check if user already exists
+      const userExists = await getUserByUsername(user.userID);
+      if (!userExists) {
+        // Insert into users table
+        await pool.execute(
+          'INSERT INTO users (userID, name, role, email, password) VALUES (?, ?, ?, ?, ?)',
+          [user.userID, user.name, user.role, user.email, password]
+        );
+        
+        // Insert role-specific data
+        if (user.role === 'admin') {
+          await pool.execute(
+            'INSERT INTO admins (userID, designation, researchArea) VALUES (?, ?, ?)',
+            [user.userID, user.designation, user.researchArea]
+          );
+        } else if (user.role === 'student') {
+          await pool.execute(
+            'INSERT INTO students (userID, department, year) VALUES (?, ?, ?)',
+            [user.userID, user.department, user.year]
+          );
+        }
+        
+        console.log(`Created dummy user: ${user.userID}`);
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error creating dummy users:', error);
     return false;
   }
 }

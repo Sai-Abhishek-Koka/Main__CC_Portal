@@ -128,6 +128,84 @@ app.get('/api/users', verifyToken, isAdmin, async (req, res) => {
   }
 });
 
+// Protected route - Add a new user (admin only)
+app.post('/api/users', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const { userID, name, email, role, password } = req.body;
+    
+    // Validate required fields
+    if (!userID || !name || !email || !role || !password) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+    
+    // Check if user already exists
+    const existingUser = await getUserByUsername(userID);
+    if (existingUser) {
+      return res.status(409).json({ message: 'Username already exists' });
+    }
+    
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 8);
+    
+    // Insert into users table
+    const [result] = await pool.execute(
+      'INSERT INTO users (userID, name, role, email, password, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
+      [userID, name, role, email, hashedPassword]
+    );
+    
+    // Insert role-specific information
+    if (role === 'admin') {
+      await pool.execute(
+        'INSERT INTO admins (userID, designation) VALUES (?, ?)',
+        [userID, 'New Administrator']
+      );
+    } else if (role === 'student') {
+      await pool.execute(
+        'INSERT INTO students (userID, department, year) VALUES (?, ?, ?)',
+        [userID, 'General', 1]
+      );
+    }
+    
+    res.status(201).json({ 
+      message: 'User created successfully',
+      user: { userID, name, email, role }
+    });
+  } catch (error) {
+    console.error('Error creating user:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Protected route - Delete a user (admin only)
+app.delete('/api/users/:userID', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const { userID } = req.params;
+    
+    // Prevent deleting yourself
+    if (userID === req.user.username) {
+      return res.status(400).json({ message: 'You cannot delete your own account' });
+    }
+    
+    // Check if user exists
+    const user = await getUserByUsername(userID);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Delete from users table (will cascade to role-specific tables)
+    const [result] = await pool.execute('DELETE FROM users WHERE userID = ?', [userID]);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.status(200).json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // API route to get servers
 app.get('/api/servers', verifyToken, async (req, res) => {
   try {
