@@ -198,6 +198,8 @@ async function createDummyUsers() {
 // Get all users with pagination and filtering
 async function getUsers(limit = 20, offset = 0, role = null) {
   try {
+    console.log('Getting users with params:', { limit, offset, role });
+    
     let query = 'SELECT u.*, ' +
                 'CASE ' +
                 'WHEN u.role = "admin" THEN a.designation ' +
@@ -218,7 +220,11 @@ async function getUsers(limit = 20, offset = 0, role = null) {
     query += ' ORDER BY u.created_at DESC LIMIT ? OFFSET ?';
     params.push(limit, offset);
     
+    console.log('Executing query:', query);
+    console.log('With params:', params);
+    
     const [rows] = await pool.execute(query, params);
+    console.log(`Query returned ${rows.length} users`);
     return rows;
   } catch (error) {
     console.error('Error getting users:', error);

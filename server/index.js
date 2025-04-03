@@ -125,7 +125,9 @@ app.get('/api/users', verifyToken, isAdmin, async (req, res) => {
     const offset = parseInt(req.query.offset) || 0;
     const role = req.query.role;
     
+    console.log('Fetching users with params:', { limit, offset, role });
     const users = await getUsers(limit, offset, role);
+    console.log(`Found ${users.length} users`);
     res.status(200).json(users);
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -133,8 +135,7 @@ app.get('/api/users', verifyToken, isAdmin, async (req, res) => {
   }
 });
 
-// Protected route - Add a new user (admin only)
-// Modified to remove token verification for testing purposes
+// Modified API route - Add a new user (no authentication required)
 app.post('/api/users', async (req, res) => {
   try {
     const { userID, name, email, role, password, phone } = req.body;

@@ -64,6 +64,9 @@ const formSchema = z.object({
 const fetchUsers = async () => {
   try {
     const token = localStorage.getItem("token");
+    
+    console.log("Fetching users with token:", token ? "Token exists" : "No token");
+    
     const response = await fetch("http://localhost:5000/api/users", {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -71,13 +74,17 @@ const fetchUsers = async () => {
     });
     
     if (!response.ok) {
-      throw new Error("Failed to fetch users");
+      const errorData = await response.json().catch(() => ({}));
+      console.error("Error response from server:", errorData);
+      throw new Error(errorData.message || "Failed to fetch users");
     }
     
-    return response.json();
+    const data = await response.json();
+    console.log("Fetched users:", data);
+    return data;
   } catch (error) {
     console.error("Error fetching users:", error);
-    return [];
+    throw error;
   }
 };
 
@@ -122,6 +129,7 @@ const addUser = async (userData: z.infer<typeof formSchema>) => {
       throw new Error(data.message || "Failed to add user");
     }
     
+    console.log("User added successfully:", data);
     return data;
   } catch (error) {
     console.error("Error adding user:", error);
@@ -149,9 +157,23 @@ const Users = () => {
   });
   
   // Query for fetching users
-  const { data: users = [], isLoading, error, refetch } = useQuery({
+  const { 
+    data: users = [], 
+    isLoading, 
+    error, 
+    refetch 
+  } = useQuery({
     queryKey: ["users"],
     queryFn: fetchUsers,
+    retry: 1,
+    onError: (error) => {
+      console.error("Error in useQuery:", error);
+      toast({
+        title: "Error loading users",
+        description: (error as Error).message,
+        variant: "destructive",
+      });
+    }
   });
   
   // Mutation for deleting a user
@@ -178,7 +200,7 @@ const Users = () => {
     mutationFn: addUser,
     onSuccess: () => {
       // Force refetch to update the UI
-      refetch();
+      queryClient.invalidateQueries({ queryKey: ["users"] });
       setIsDialogOpen(false);
       form.reset();
       toast({
@@ -201,12 +223,17 @@ const Users = () => {
     addMutation.mutate(values);
   };
   
+  // Log users when they change
+  useEffect(() => {
+    console.log("Current users state:", users);
+  }, [users]);
+  
   // Filtered users based on search term
-  const filteredUsers = users.filter((user: User) => 
+  const filteredUsers = Array.isArray(users) ? users.filter((user: User) => 
     user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.role?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ) : [];
 
   // Handle delete user
   const handleDeleteUser = (userID: string) => {
@@ -242,7 +269,16 @@ const Users = () => {
             {isLoading ? (
               <div className="text-center py-10">Loading users...</div>
             ) : error ? (
-              <div className="text-center py-10 text-destructive">Error loading users: {(error as Error).message}</div>
+              <div className="text-center py-10 text-destructive">
+                Error loading users: {(error as Error).message}
+                <Button 
+                  variant="outline" 
+                  className="mt-4" 
+                  onClick={() => refetch()}
+                >
+                  Try Again
+                </Button>
+              </div>
             ) : (
               <div className="bg-white rounded-lg shadow-sm border border-border overflow-hidden">
                 <Table>
