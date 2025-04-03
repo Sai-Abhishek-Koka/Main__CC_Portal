@@ -156,7 +156,7 @@ const Users = () => {
     },
   });
   
-  // Query for fetching users
+  // Query for fetching users - fixed to use the proper way to handle errors
   const { 
     data: users = [], 
     isLoading, 
@@ -166,13 +166,15 @@ const Users = () => {
     queryKey: ["users"],
     queryFn: fetchUsers,
     retry: 1,
-    onError: (error) => {
-      console.error("Error in useQuery:", error);
-      toast({
-        title: "Error loading users",
-        description: (error as Error).message,
-        variant: "destructive",
-      });
+    onSettled: (data, error) => {
+      if (error) {
+        console.error("Error in useQuery:", error);
+        toast({
+          title: "Error loading users",
+          description: (error as Error).message,
+          variant: "destructive",
+        });
+      }
     }
   });
   
