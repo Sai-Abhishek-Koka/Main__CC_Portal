@@ -88,18 +88,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(data.message || 'Login failed');
       }
       
+      // Save token and user data in localStorage regardless of rememberMe
+      // This ensures the token is available for API calls during the session
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("userRole", data.user.role);
+      localStorage.setItem("userID", data.user.userID);
+      localStorage.setItem("userName", data.user.name);
+      
       setIsAuthenticated(true);
       setUserRole(data.user.role);
       setUserID(data.user.userID);
       setUserName(data.user.name);
-      
-      // Store auth state if rememberMe is checked
-      if (rememberMe) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("userRole", data.user.role);
-        localStorage.setItem("userID", data.user.userID);
-        localStorage.setItem("userName", data.user.name);
-      }
       
       // Redirect based on role
       navigate(data.user.role === "admin" ? "/admin/dashboard" : "/user/dashboard");
