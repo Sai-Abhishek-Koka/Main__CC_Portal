@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
@@ -80,7 +79,6 @@ const Users = () => {
     },
   });
 
-  // Updated fetchUsers function to use the auth context
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -112,7 +110,6 @@ const Users = () => {
     }
   };
   
-  // Updated deleteUser function to use API_URL
   const deleteUser = async (userID: string) => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -134,15 +131,20 @@ const Users = () => {
     return response.json();
   };
   
-  // Updated addUser function to use API_URL
   const addUser = async (userData: z.infer<typeof formSchema>) => {
     try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("Authentication token is missing");
+      }
+      
       console.log("Adding user with data:", userData);
       
       const response = await fetch(`${API_URL}/users`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(userData),
       });
@@ -170,7 +172,7 @@ const Users = () => {
     queryKey: ["users"],
     queryFn: fetchUsers,
     retry: 1,
-    enabled: isAuthenticated, // Only fetch when authenticated
+    enabled: isAuthenticated,
   });
   
   const deleteMutation = useMutation({
@@ -219,11 +221,10 @@ const Users = () => {
   useEffect(() => {
     console.log("Current users state:", users);
     
-    // If authenticated, refetch users when the component mounts
     if (isAuthenticated) {
       refetch();
     }
-  }, [users, isAuthenticated, refetch]);
+  }, [isAuthenticated, refetch]);
   
   const filteredUsers = Array.isArray(users) ? users.filter((user: User) => 
     user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
