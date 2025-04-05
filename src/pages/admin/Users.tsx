@@ -45,7 +45,7 @@ interface User {
   role: string;
   phone: string;
   created_at: string;
-  detail: string;
+  detail?: string;
 }
 
 const formSchema = z.object({
@@ -80,11 +80,11 @@ const Users = () => {
     },
   });
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (): Promise<User[]> => {
     try {
       console.log("Fetching users with public access");
       
-      // Simplified fetch without authentication header
+      // Public API endpoint - no authentication needed
       const response = await fetch(`${API_URL}/users`);
       
       if (!response.ok) {
@@ -95,7 +95,7 @@ const Users = () => {
       
       const data = await response.json();
       console.log("Fetched users:", data);
-      return data;
+      return data || [];
     } catch (error) {
       console.error("Error fetching users:", error);
       throw error;
@@ -204,9 +204,8 @@ const Users = () => {
   };
   
   useEffect(() => {
-    console.log("Current users state:", users);
-    
     // Fetch users on component mount
+    console.log("Component mounted, fetching users");
     refetch();
   }, [refetch]);
   

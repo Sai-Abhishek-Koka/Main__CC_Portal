@@ -118,7 +118,7 @@ app.get('/api/user/profile', verifyToken, (req, res) => {
   res.status(200).json({ user: req.user });
 });
 
-// Public API route to get all users - COMPLETELY PUBLIC, NO AUTH CHECK
+// PUBLIC API route to get all users - NO AUTH REQUIRED
 app.get('/api/users', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 20;
