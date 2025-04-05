@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
@@ -82,19 +81,9 @@ const Users = () => {
 
   const fetchUsers = async () => {
     try {
-      const token = localStorage.getItem("token");
+      console.log("Fetching users without authentication");
       
-      console.log("Fetching users with token:", token ? "Token exists" : "No token");
-      
-      if (!token) {
-        throw new Error("Authentication token is missing");
-      }
-      
-      const response = await fetch(`${API_URL}/users`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(`${API_URL}/users`);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -134,18 +123,12 @@ const Users = () => {
   
   const addUser = async (userData: z.infer<typeof formSchema>) => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error("Authentication token is missing");
-      }
-      
       console.log("Adding user with data:", userData);
       
       const response = await fetch(`${API_URL}/users`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(userData),
       });
@@ -173,7 +156,6 @@ const Users = () => {
     queryKey: ["users"],
     queryFn: fetchUsers,
     retry: 1,
-    enabled: isAuthenticated,
   });
   
   const deleteMutation = useMutation({
@@ -222,10 +204,9 @@ const Users = () => {
   useEffect(() => {
     console.log("Current users state:", users);
     
-    if (isAuthenticated) {
-      refetch();
-    }
-  }, [isAuthenticated, refetch]);
+    // Fetch users on component mount
+    refetch();
+  }, [refetch]);
   
   const filteredUsers = Array.isArray(users) ? users.filter((user: User) => 
     user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||

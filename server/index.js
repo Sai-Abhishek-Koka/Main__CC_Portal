@@ -118,14 +118,14 @@ app.get('/api/user/profile', verifyToken, (req, res) => {
   res.status(200).json({ user: req.user });
 });
 
-// Protected route - Get all users (admin only)
-app.get('/api/users', verifyToken, isAdmin, async (req, res) => {
+// Modified: Get all users (public access)
+app.get('/api/users', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 20;
     const offset = parseInt(req.query.offset) || 0;
     const role = req.query.role;
     
-    console.log('Fetching users with params:', { limit, offset, role });
+    console.log('Fetching users with public access. Params:', { limit, offset, role });
     const users = await getUsers(limit, offset, role);
     console.log(`Found ${users.length} users`);
     res.status(200).json(users);
