@@ -1,3 +1,4 @@
+
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 const bcrypt = require('bcryptjs');
@@ -200,7 +201,7 @@ async function getUsers(limit = 20, offset = 0, role = null) {
   try {
     console.log('Getting users with params:', { limit, offset, role });
     
-    let query = 'SELECT u.*, ' +
+    let query = 'SELECT u.userID, u.name, u.email, u.role, u.phone, u.created_at, ' +
                 'CASE ' +
                 'WHEN u.role = "admin" THEN a.designation ' +
                 'WHEN u.role = "student" THEN s.department ' +

@@ -118,17 +118,24 @@ app.get('/api/user/profile', verifyToken, (req, res) => {
   res.status(200).json({ user: req.user });
 });
 
-// Modified: Get all users (public access)
+// Modified API route to get all users without authentication
 app.get('/api/users', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 20;
     const offset = parseInt(req.query.offset) || 0;
     const role = req.query.role;
     
-    console.log('Fetching users with public access. Params:', { limit, offset, role });
+    console.log('Fetching users without authentication. Params:', { limit, offset, role });
     const users = await getUsers(limit, offset, role);
-    console.log(`Found ${users.length} users`);
-    res.status(200).json(users);
+    
+    // Remove password field from each user for security
+    const safeUsers = users.map(user => {
+      const { password, ...safeUser } = user;
+      return safeUser;
+    });
+    
+    console.log(`Found ${safeUsers.length} users`);
+    res.status(200).json(safeUsers);
   } catch (error) {
     console.error('Error fetching users:', error);
     res.status(500).json({ message: 'Server error' });
