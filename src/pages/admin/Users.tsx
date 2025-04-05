@@ -82,8 +82,9 @@ const Users = () => {
 
   const fetchUsers = async () => {
     try {
-      console.log("Fetching users without authentication");
+      console.log("Fetching users with public access");
       
+      // Simplified fetch without authentication header
       const response = await fetch(`${API_URL}/users`);
       
       if (!response.ok) {

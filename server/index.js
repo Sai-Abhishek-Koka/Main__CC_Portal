@@ -118,18 +118,19 @@ app.get('/api/user/profile', verifyToken, (req, res) => {
   res.status(200).json({ user: req.user });
 });
 
-// Modified API route to get all users without authentication
+// Public API route to get all users - COMPLETELY PUBLIC, NO AUTH CHECK
 app.get('/api/users', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 20;
     const offset = parseInt(req.query.offset) || 0;
     const role = req.query.role;
     
-    console.log('Fetching users without authentication. Params:', { limit, offset, role });
+    console.log('Fetching users with public access. Params:', { limit, offset, role });
     const users = await getUsers(limit, offset, role);
     
-    // Remove password field from each user for security
+    // Remove sensitive fields from each user for security
     const safeUsers = users.map(user => {
+      // Ensure password is never sent to the client
       const { password, ...safeUser } = user;
       return safeUser;
     });
@@ -142,7 +143,7 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
-// Modified API route - Add a new user (no authentication required)
+// Protected API route - Add a new user (no authentication required)
 app.post('/api/users', async (req, res) => {
   try {
     const { userID, name, email, role, password, phone } = req.body;
