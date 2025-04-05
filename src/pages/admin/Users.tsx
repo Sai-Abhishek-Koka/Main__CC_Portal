@@ -95,7 +95,7 @@ const Users = () => {
       
       const data = await response.json();
       console.log("Fetched users:", data);
-      return data || [];
+      return Array.isArray(data) ? data : [];
     } catch (error) {
       console.error("Error fetching users:", error);
       throw error;
@@ -210,9 +210,9 @@ const Users = () => {
   }, [refetch]);
   
   const filteredUsers = Array.isArray(users) ? users.filter((user: User) => 
-    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role?.toLowerCase().includes(searchTerm.toLowerCase())
+    user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user?.role?.toLowerCase().includes(searchTerm.toLowerCase())
   ) : [];
 
   const handleDeleteUser = (userID: string) => {

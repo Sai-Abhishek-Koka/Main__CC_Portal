@@ -218,13 +218,28 @@ async function getUsers(limit = 20, offset = 0, role = null) {
       params.push(role);
     }
     
-    query += ' ORDER BY u.created_at DESC LIMIT ? OFFSET ?';
-    params.push(limit, offset);
+    query += ' ORDER BY u.created_at DESC';
+    
+    // Add limit and offset as separate statements for MySQL2
+    if (limit) {
+      query += ' LIMIT ?';
+      params.push(Number(limit));
+    }
+    
+    if (offset) {
+      query += ' OFFSET ?';
+      params.push(Number(offset));
+    }
     
     console.log('Executing query:', query);
     console.log('With params:', params);
     
-    const [rows] = await pool.execute(query, params);
+    // Ensure all parameters are of the correct type
+    const sanitizedParams = params.map(param => 
+      typeof param === 'number' ? param : param
+    );
+    
+    const [rows] = await pool.execute(query, sanitizedParams);
     console.log(`Query returned ${rows.length} users`);
     return rows;
   } catch (error) {
