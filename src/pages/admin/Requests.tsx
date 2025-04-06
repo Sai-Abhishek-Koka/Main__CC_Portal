@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Request {
   requestID: string;
@@ -28,6 +29,8 @@ interface Request {
   userID: string;
   serverID: string | null;
 }
+
+const API_BASE_URL = "http://localhost:5000"; // Define the base URL for API calls
 
 const Requests = () => {
   const [requests, setRequests] = useState<Request[]>([]);
@@ -44,7 +47,8 @@ const Requests = () => {
         throw new Error("No authentication token found");
       }
       
-      const response = await fetch("/api/requests", {
+      console.log("Fetching requests from:", `${API_BASE_URL}/api/requests`);
+      const response = await fetch(`${API_BASE_URL}/api/requests`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -55,6 +59,7 @@ const Requests = () => {
       }
       
       const data = await response.json();
+      console.log("Requests data received:", data);
       setRequests(data);
       
       // Filter for pending requests
@@ -83,7 +88,7 @@ const Requests = () => {
         throw new Error("No authentication token found");
       }
       
-      const response = await fetch(`/api/requests/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/requests/${id}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -118,7 +123,7 @@ const Requests = () => {
         throw new Error("No authentication token found");
       }
       
-      const response = await fetch(`/api/requests/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/requests/${id}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -179,9 +184,9 @@ const Requests = () => {
             </p>
             
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
-                {error}
-              </div>
+              <Alert variant="destructive" className="mb-6">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
             
             <section>
