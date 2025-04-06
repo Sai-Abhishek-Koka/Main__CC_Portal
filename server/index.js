@@ -1,4 +1,3 @@
-
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
@@ -289,6 +288,39 @@ app.put('/api/requests/:requestID', verifyToken, isAdmin, async (req, res) => {
     res.status(200).json({ message: `Request ${requestID} status updated to ${status}` });
   } catch (error) {
     console.error('Error updating request status:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// API route to create a new request (authenticated users)
+app.post('/api/requests', verifyToken, async (req, res) => {
+  try {
+    const { type, description, priority } = req.body;
+    
+    if (!type || !description || !priority) {
+      return res.status(400).json({ message: 'Type, description, and priority are required' });
+    }
+    
+    // Generate a request ID
+    const requestID = `req${Date.now()}`;
+    
+    // Get the user ID from the token
+    const userID = req.user.username;
+    
+    console.log(`Creating new request for user ${userID}:`, { type, description, priority });
+    
+    // Insert into requests table
+    const [result] = await pool.execute(
+      'INSERT INTO requests (requestID, userID, type, description, status) VALUES (?, ?, ?, ?, ?)',
+      [requestID, userID, type, description, 'pending']
+    );
+    
+    res.status(201).json({ 
+      message: 'Request created successfully',
+      request: { requestID, userID, type, description, status: 'pending' }
+    });
+  } catch (error) {
+    console.error('Error creating request:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

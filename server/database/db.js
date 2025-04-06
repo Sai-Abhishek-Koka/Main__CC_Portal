@@ -1,4 +1,3 @@
-
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 const bcrypt = require('bcryptjs');
@@ -146,6 +145,13 @@ async function createTestServers() {
 // Create test requests
 async function createTestRequests() {
   try {
+    // Check if requests table is empty
+    const [requestCount] = await pool.execute('SELECT COUNT(*) as count FROM requests');
+    if (requestCount[0].count > 0) {
+      console.log('Requests table already has data');
+      return true;
+    }
+    
     // First check if users exist
     const [userRows] = await pool.execute('SELECT userID FROM users LIMIT 2');
     if (userRows.length < 2) {
@@ -184,6 +190,30 @@ async function createTestRequests() {
         type: 'Software', 
         description: 'Need to install Python 3.9 and TensorFlow for my research project', 
         status: 'rejected' 
+      },
+      { 
+        requestID: 'req004', 
+        userID: 'student011', 
+        serverID: serverRows[1]?.serverID || null, 
+        type: 'High', 
+        description: 'Emergency access to data backup server', 
+        status: 'pending' 
+      },
+      { 
+        requestID: 'req005', 
+        userID: 'student012', 
+        serverID: serverRows[0]?.serverID || null, 
+        type: 'Medium', 
+        description: 'Request for web server hosting permissions', 
+        status: 'pending' 
+      },
+      { 
+        requestID: 'req006', 
+        userID: 'student013', 
+        serverID: serverRows[0]?.serverID || null, 
+        type: 'Low', 
+        description: 'Need additional storage space for research data', 
+        status: 'pending' 
       }
     ];
     
@@ -543,5 +573,5 @@ module.exports = {
   updateRequestStatus,
   getWifiSessions,
   createTestUsers,
-  createTables
+  createTestRequests
 };
