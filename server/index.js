@@ -1,4 +1,3 @@
-
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
@@ -234,24 +233,50 @@ app.get('/api/servers', verifyToken, async (req, res) => {
   }
 });
 
-// API route to get user requests
+// API route to get requests (with auth)
 app.get('/api/requests', verifyToken, async (req, res) => {
   try {
-    let query = 'SELECT r.*, u.username FROM requests r JOIN users u ON r.user_id = u.id';
-    const params = [];
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = parseInt(req.query.offset) || 0;
+    const status = req.query.status;
     
-    // If user role is not admin, only show their requests
-    if (req.user.role !== 'admin') {
-      query += ' WHERE r.user_id = ?';
-      params.push(req.user.id);
-    }
+    // If not admin, only show their requests
+    const userID = req.user.role === 'admin' ? null : req.user.username;
     
-    query += ' ORDER BY r.created_at DESC';
+    const { getRequests } = require('./database/db');
+    const requests = await getRequests(userID, limit, offset, status);
     
-    const [requests] = await pool.execute(query, params);
     res.status(200).json(requests);
   } catch (error) {
     console.error('Error fetching requests:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// API route to update request status (admin only)
+app.put('/api/requests/:requestID', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const { requestID } = req.params;
+    const { status } = req.body;
+    
+    if (!requestID || !status) {
+      return res.status(400).json({ message: 'Request ID and status are required' });
+    }
+    
+    if (!['approved', 'rejected', 'pending'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status value' });
+    }
+    
+    const { updateRequestStatus } = require('./database/db');
+    const success = await updateRequestStatus(requestID, status);
+    
+    if (!success) {
+      return res.status(404).json({ message: 'Request not found or not updated' });
+    }
+    
+    res.status(200).json({ message: `Request ${requestID} status updated to ${status}` });
+  } catch (error) {
+    console.error('Error updating request status:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

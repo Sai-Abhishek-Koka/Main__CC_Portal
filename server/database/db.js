@@ -302,14 +302,36 @@ async function getRequests(userID = null, limit = 20, offset = 0, status = null)
       query += ' WHERE ' + conditions.join(' AND ');
     }
     
-    query += ' ORDER BY r.timestamp DESC LIMIT ? OFFSET ?';
-    params.push(limit, offset);
+    query += ' ORDER BY r.timestamp DESC';
+    
+    if (limit) {
+      query += ' LIMIT ? OFFSET ?';
+      params.push(limit, offset);
+    }
+    
+    console.log('Executing query:', query);
+    console.log('With params:', params);
     
     const [rows] = await pool.execute(query, params);
+    console.log(`Query returned ${rows.length} requests`);
+    
     return rows;
   } catch (error) {
     console.error('Error getting requests:', error);
     return [];
+  }
+}
+
+// Update request status
+async function updateRequestStatus(requestID, status) {
+  try {
+    const query = 'UPDATE requests SET status = ? WHERE requestID = ?';
+    const [result] = await pool.execute(query, [status, requestID]);
+    
+    return result.affectedRows > 0;
+  } catch (error) {
+    console.error('Error updating request status:', error);
+    return false;
   }
 }
 
@@ -343,6 +365,7 @@ module.exports = {
   getUsers,
   getServers,
   getRequests,
+  updateRequestStatus,
   getWifiSessions,
   createTestUsers
 };
