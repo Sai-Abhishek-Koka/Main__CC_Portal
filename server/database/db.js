@@ -19,10 +19,185 @@ async function testConnection() {
   try {
     const connection = await pool.getConnection();
     console.log('Database connection established successfully');
+    
+    // Create tables if they don't exist
+    await createTables();
+    
     connection.release();
     return true;
   } catch (error) {
     console.error('Database connection failed:', error);
+    return false;
+  }
+}
+
+// Create necessary tables if they don't exist
+async function createTables() {
+  try {
+    // Create users table if not exists
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        userID VARCHAR(50) UNIQUE NOT NULL,
+        name VARCHAR(100) NOT NULL,
+        role ENUM('admin', 'student') NOT NULL,
+        email VARCHAR(100) UNIQUE NOT NULL,
+        phone VARCHAR(20),
+        password VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    // Create admins table if not exists
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS admins (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        userID VARCHAR(50) UNIQUE NOT NULL,
+        designation VARCHAR(100),
+        researchArea VARCHAR(100),
+        FOREIGN KEY (userID) REFERENCES users(userID) ON DELETE CASCADE
+      )
+    `);
+    
+    // Create students table if not exists
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS students (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        userID VARCHAR(50) UNIQUE NOT NULL,
+        department VARCHAR(100),
+        year INT,
+        FOREIGN KEY (userID) REFERENCES users(userID) ON DELETE CASCADE
+      )
+    `);
+    
+    // Create servers table if not exists
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS servers (
+        serverID VARCHAR(50) PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        ip VARCHAR(50) NOT NULL,
+        status ENUM('online', 'offline', 'maintenance') DEFAULT 'online',
+        type VARCHAR(50),
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    // Create requests table if not exists
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS requests (
+        requestID VARCHAR(50) PRIMARY KEY,
+        userID VARCHAR(50) NOT NULL,
+        serverID VARCHAR(50),
+        type VARCHAR(50) NOT NULL,
+        description TEXT,
+        status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (userID) REFERENCES users(userID) ON DELETE CASCADE,
+        FOREIGN KEY (serverID) REFERENCES servers(serverID) ON DELETE SET NULL
+      )
+    `);
+    
+    console.log('Tables created/verified successfully');
+    
+    // Check if we need to create some test servers
+    const [serverRows] = await pool.execute('SELECT COUNT(*) as count FROM servers');
+    if (serverRows[0].count < 1) {
+      await createTestServers();
+    }
+    
+    // Check if we need to create some test requests
+    const [requestRows] = await pool.execute('SELECT COUNT(*) as count FROM requests');
+    if (requestRows[0].count < 1) {
+      await createTestRequests();
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error creating tables:', error);
+    return false;
+  }
+}
+
+// Create test servers
+async function createTestServers() {
+  try {
+    const servers = [
+      { serverID: 'srv001', name: 'Main Application Server', ip: '192.168.1.10', status: 'online', type: 'Production', description: 'Primary application server for the department' },
+      { serverID: 'srv002', name: 'Database Server', ip: '192.168.1.11', status: 'online', type: 'Production', description: 'MySQL database server' },
+      { serverID: 'srv003', name: 'Development Server', ip: '192.168.1.12', status: 'maintenance', type: 'Development', description: 'Server for development and testing' }
+    ];
+    
+    for (const server of servers) {
+      await pool.execute(
+        'INSERT INTO servers (serverID, name, ip, status, type, description) VALUES (?, ?, ?, ?, ?, ?)',
+        [server.serverID, server.name, server.ip, server.status, server.type, server.description]
+      );
+    }
+    
+    console.log('Test servers created successfully');
+    return true;
+  } catch (error) {
+    console.error('Error creating test servers:', error);
+    return false;
+  }
+}
+
+// Create test requests
+async function createTestRequests() {
+  try {
+    // First check if users exist
+    const [userRows] = await pool.execute('SELECT userID FROM users LIMIT 2');
+    if (userRows.length < 2) {
+      console.log('Not enough users to create test requests');
+      return false;
+    }
+    
+    // Get server IDs
+    const [serverRows] = await pool.execute('SELECT serverID FROM servers LIMIT 2');
+    if (serverRows.length < 1) {
+      console.log('No servers available to create test requests');
+      return false;
+    }
+    
+    const requests = [
+      { 
+        requestID: 'req001', 
+        userID: 'student001', 
+        serverID: serverRows[0]?.serverID || null, 
+        type: 'Access', 
+        description: 'Need access to the main server for my project', 
+        status: 'pending' 
+      },
+      { 
+        requestID: 'req002', 
+        userID: 'student001', 
+        serverID: serverRows[0]?.serverID || null, 
+        type: 'Resource', 
+        description: 'Requesting additional RAM allocation for computational tasks', 
+        status: 'approved' 
+      },
+      { 
+        requestID: 'req003', 
+        userID: 'student011', 
+        serverID: serverRows[1]?.serverID || null, 
+        type: 'Software', 
+        description: 'Need to install Python 3.9 and TensorFlow for my research project', 
+        status: 'rejected' 
+      }
+    ];
+    
+    for (const request of requests) {
+      await pool.execute(
+        'INSERT INTO requests (requestID, userID, serverID, type, description, status) VALUES (?, ?, ?, ?, ?, ?)',
+        [request.requestID, request.userID, request.serverID, request.type, request.description, request.status]
+      );
+    }
+    
+    console.log('Test requests created successfully');
+    return true;
+  } catch (error) {
+    console.error('Error creating test requests:', error);
     return false;
   }
 }
@@ -367,5 +542,6 @@ module.exports = {
   getRequests,
   updateRequestStatus,
   getWifiSessions,
-  createTestUsers
+  createTestUsers,
+  createTables
 };

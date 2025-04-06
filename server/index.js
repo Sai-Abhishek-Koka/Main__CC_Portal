@@ -1,9 +1,19 @@
+
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
-const { pool, testConnection, getUserByUsername, getUsers, createTestUsers } = require('./database/db');
+const { 
+  pool, 
+  testConnection, 
+  getUserByUsername, 
+  getUsers, 
+  createTestUsers, 
+  getRequests,
+  updateRequestStatus,
+  createTables 
+} = require('./database/db');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -243,8 +253,10 @@ app.get('/api/requests', verifyToken, async (req, res) => {
     // If not admin, only show their requests
     const userID = req.user.role === 'admin' ? null : req.user.username;
     
-    const { getRequests } = require('./database/db');
+    console.log(`Fetching requests for ${userID || 'admin (all users)'}`);
+    
     const requests = await getRequests(userID, limit, offset, status);
+    console.log(`Returning ${requests.length} requests`);
     
     res.status(200).json(requests);
   } catch (error) {
@@ -267,7 +279,7 @@ app.put('/api/requests/:requestID', verifyToken, isAdmin, async (req, res) => {
       return res.status(400).json({ message: 'Invalid status value' });
     }
     
-    const { updateRequestStatus } = require('./database/db');
+    console.log(`Updating request ${requestID} status to ${status}`);
     const success = await updateRequestStatus(requestID, status);
     
     if (!success) {

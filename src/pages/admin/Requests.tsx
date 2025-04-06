@@ -63,6 +63,7 @@ const Requests = () => {
       
       setError(null);
     } catch (err: any) {
+      console.error("Error fetching requests:", err);
       setError(err.message || "Failed to fetch requests");
       toast.error("Failed to load requests");
     } finally {
@@ -188,7 +189,7 @@ const Requests = () => {
               
               {loading ? (
                 <div className="flex justify-center py-8">
-                  <Spinner size="lg" />
+                  <Spinner />
                 </div>
               ) : (
                 <div className="bg-white rounded-lg shadow-sm border border-border overflow-hidden">
@@ -256,7 +257,7 @@ const Requests = () => {
               
               {loading ? (
                 <div className="flex justify-center py-8">
-                  <Spinner size="lg" />
+                  <Spinner />
                 </div>
               ) : (
                 <div className="bg-white rounded-lg shadow-sm border border-border overflow-hidden">
