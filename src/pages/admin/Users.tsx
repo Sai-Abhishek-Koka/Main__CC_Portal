@@ -14,7 +14,7 @@ import {
   DialogFooter,
   DialogDescription
 } from "@/components/ui/dialog";
-import { Trash, Plus } from "lucide-react";
+import { Trash, Plus, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Table,
@@ -66,7 +66,6 @@ const Users = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { isAuthenticated } = useAuth();
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -84,8 +83,9 @@ const Users = () => {
     try {
       console.log("Fetching users with public access");
       
-      // Public API endpoint - no authentication needed
-      const response = await fetch(`${API_URL}/users`);
+      // Add a timestamp to prevent caching
+      const timestamp = new Date().getTime();
+      const response = await fetch(`${API_URL}/users?_t=${timestamp}`);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -95,7 +95,13 @@ const Users = () => {
       
       const data = await response.json();
       console.log("Fetched users:", data);
-      return Array.isArray(data) ? data : [];
+      
+      if (!Array.isArray(data)) {
+        console.error("Expected array of users, got:", typeof data);
+        return [];
+      }
+      
+      return data;
     } catch (error) {
       console.error("Error fetching users:", error);
       throw error;
@@ -240,9 +246,14 @@ const Users = () => {
                   className="w-full"
                 />
               </div>
-              <Button onClick={() => setIsDialogOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" /> Add New User
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => refetch()}>
+                  <RefreshCw className="mr-2 h-4 w-4" /> Refresh
+                </Button>
+                <Button onClick={() => setIsDialogOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" /> Add New User
+                </Button>
+              </div>
             </div>
             
             {isLoading ? (
@@ -301,7 +312,21 @@ const Users = () => {
                     ) : (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
-                          No users found
+                          {Array.isArray(users) && users.length === 0 ? (
+                            <>
+                              No users found in database. Please make sure your database is properly set up.
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="ml-2" 
+                                onClick={() => refetch()}
+                              >
+                                <RefreshCw className="h-4 w-4 mr-1" /> Refresh
+                              </Button>
+                            </>
+                          ) : (
+                            "No users match your search criteria"
+                          )}
                         </TableCell>
                       </TableRow>
                     )}

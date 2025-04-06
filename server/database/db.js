@@ -201,47 +201,65 @@ async function getUsers(limit = 20, offset = 0, role = null) {
   try {
     console.log('Getting users with params:', { limit, offset, role });
     
-    let query = 'SELECT u.userID, u.name, u.email, u.role, u.phone, u.created_at, ' +
-                'CASE ' +
-                'WHEN u.role = "admin" THEN a.designation ' +
-                'WHEN u.role = "student" THEN s.department ' +
-                'ELSE NULL ' +
-                'END as detail ' +
-                'FROM users u ' +
-                'LEFT JOIN admins a ON u.userID = a.userID AND u.role = "admin" ' +
-                'LEFT JOIN students s ON u.userID = s.userID AND u.role = "student" ';
-    
+    // Simplified query to troubleshoot database connection
+    let query = 'SELECT * FROM users';
     const params = [];
     
     if (role) {
-      query += ' WHERE u.role = ?';
+      query += ' WHERE role = ?';
       params.push(role);
     }
     
-    query += ' ORDER BY u.created_at DESC';
-    
-    // Add limit and offset as separate statements for MySQL2
-    if (limit) {
-      query += ' LIMIT ?';
-      params.push(Number(limit));
-    }
-    
-    if (offset) {
-      query += ' OFFSET ?';
-      params.push(Number(offset));
-    }
-    
-    console.log('Executing query:', query);
+    // For debugging, no pagination for now to simplify
+    console.log('Executing simplified query:', query);
     console.log('With params:', params);
     
-    // Ensure all parameters are of the correct type
-    const sanitizedParams = params.map(param => 
-      typeof param === 'number' ? param : param
-    );
-    
-    const [rows] = await pool.execute(query, sanitizedParams);
+    const [rows] = await pool.execute(query, params);
     console.log(`Query returned ${rows.length} users`);
-    return rows;
+    
+    // Log first user details for debugging (excluding password)
+    if (rows.length > 0) {
+      const { password, ...firstUser } = rows[0];
+      console.log('First user:', firstUser);
+    }
+    
+    // Check if users are being returned correctly
+    // Process the results to include role-specific details
+    const processedUsers = [];
+    for (const user of rows) {
+      // Exclude password from response
+      const { password, ...safeUser } = user;
+      
+      // Get role-specific details
+      if (user.role === 'admin') {
+        try {
+          const [adminRows] = await pool.execute('SELECT designation FROM admins WHERE userID = ?', [user.userID]);
+          if (adminRows[0]) {
+            safeUser.detail = adminRows[0].designation;
+          }
+        } catch (error) {
+          console.error(`Error getting admin details for ${user.userID}:`, error);
+        }
+      } else if (user.role === 'student') {
+        try {
+          const [studentRows] = await pool.execute('SELECT department FROM students WHERE userID = ?', [user.userID]);
+          if (studentRows[0]) {
+            safeUser.detail = studentRows[0].department;
+          }
+        } catch (error) {
+          console.error(`Error getting student details for ${user.userID}:`, error);
+        }
+      }
+      
+      processedUsers.push(safeUser);
+    }
+    
+    // Add pagination back once query works
+    if (limit) {
+      return processedUsers.slice(offset, offset + limit);
+    }
+    
+    return processedUsers;
   } catch (error) {
     console.error('Error getting users:', error);
     return [];
