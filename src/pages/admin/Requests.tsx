@@ -40,11 +40,13 @@ const Requests = () => {
   const [error, setError] = useState<string | null>(null);
   const [pendingRequests, setPendingRequests] = useState<Request[]>([]);
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   const fetchRequests = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
       const token = localStorage.getItem("token");
       
       if (!token) {
@@ -53,16 +55,34 @@ const Requests = () => {
       
       console.log("Fetching requests from:", `${API_BASE_URL}/api/requests`);
       console.log("Using token:", token.substring(0, 20) + "...");
+      console.log("Current user:", user);
       
+      // First try to create test data to ensure we have something to display
+      try {
+        // Make a request to trigger test data creation on the server
+        await fetch(`${API_BASE_URL}/api/requests/init`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        console.log("Initialized test request data");
+      } catch (initErr) {
+        console.warn("Failed to initialize test data:", initErr);
+        // Continue anyway, this is just a helper
+      }
+      
+      // Now fetch the actual requests
       const response = await fetch(`${API_BASE_URL}/api/requests`, {
         headers: {
           Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
       });
       
       if (response.status === 401) {
         console.error("Authentication token is invalid or expired");
-        // Clear token and redirect to login
         toast.error("Your session has expired. Please log in again.");
         logout();
         navigate("/login");
@@ -77,13 +97,23 @@ const Requests = () => {
       
       const data = await response.json();
       console.log("Requests data received:", data);
+      
+      if (!Array.isArray(data)) {
+        console.error("Received non-array data:", data);
+        throw new Error("Server returned invalid data format");
+      }
+      
+      if (data.length === 0) {
+        console.log("No requests found in the response");
+        // We'll still set the empty array but won't show an error
+      }
+      
       setRequests(data);
       
       // Filter for pending requests
       const pending = data.filter((req: Request) => req.status === "pending");
       setPendingRequests(pending);
       
-      setError(null);
     } catch (err: any) {
       console.error("Error fetching requests:", err);
       setError(err.message || "Failed to fetch requests");
@@ -95,6 +125,12 @@ const Requests = () => {
 
   useEffect(() => {
     fetchRequests();
+    
+    // Set up an interval to refresh data every 30 seconds
+    const intervalId = setInterval(fetchRequests, 30000);
+    
+    // Clean up interval on component unmount
+    return () => clearInterval(intervalId);
   }, []);
 
   const handleApprove = async (id: string) => {
@@ -289,8 +325,13 @@ const Requests = () => {
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
-                            No pending requests
+                          <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                            <div className="flex flex-col items-center justify-center">
+                              <p className="mb-2">No pending requests found</p>
+                              <Button variant="outline" size="sm" onClick={fetchRequests}>
+                                <RefreshCw className="mr-1 h-4 w-4" /> Refresh
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       )}
@@ -344,8 +385,13 @@ const Requests = () => {
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
-                            No requests found
+                          <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                            <div className="flex flex-col items-center justify-center">
+                              <p className="mb-2">No requests found</p>
+                              <Button variant="outline" size="sm" onClick={fetchRequests}>
+                                <RefreshCw className="mr-1 h-4 w-4" /> Refresh
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       )}

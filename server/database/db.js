@@ -143,96 +143,168 @@ async function createTestServers() {
 }
 
 // Create test requests - Completely rewriting this function to ensure it works
-async function createTestRequests() {
+async function createTestRequests(forceCreate = false) {
   try {
     console.log('Creating test requests...');
     
-    // First make sure we have users to associate requests with
+    // Check if requests table exists, and if not, create tables first
+    try {
+      const [tableCheck] = await pool.execute('SHOW TABLES LIKE "requests"');
+      if (tableCheck.length === 0) {
+        console.log('Requests table does not exist, creating tables first');
+        await createTables();
+      }
+    } catch (tableErr) {
+      console.error('Error checking if requests table exists:', tableErr);
+      // Create tables anyway
+      await createTables();
+    }
+    
+    // Check if we should create test data
+    if (!forceCreate) {
+      // If not forcing creation, check if there are already requests
+      const [requestCount] = await pool.execute('SELECT COUNT(*) as count FROM requests');
+      if (requestCount[0].count > 0) {
+        console.log(`Found ${requestCount[0].count} existing requests, skipping test data creation`);
+        return false;
+      }
+    }
+    
+    // Get user IDs
     const [userRows] = await pool.execute('SELECT userID FROM users LIMIT 10');
     if (userRows.length === 0) {
       console.log('No users found to create test requests');
-      return false;
+      // Create test users first
+      await createTestUsers();
+      // Try again
+      const [retryUsers] = await pool.execute('SELECT userID FROM users LIMIT 10');
+      if (retryUsers.length === 0) {
+        console.error('Still no users found after creating test users');
+        return false;
+      }
     }
     
     // Get server IDs
-    const [serverRows] = await pool.execute('SELECT serverID FROM servers LIMIT 2');
-    if (serverRows.length === 0) {
-      console.log('No servers found to associate with test requests');
-      // We'll proceed anyway, just without server associations
+    let serverRows;
+    try {
+      [serverRows] = await pool.execute('SELECT serverID FROM servers LIMIT 3');
+      if (serverRows.length === 0) {
+        console.log('No servers found, creating test servers');
+        await createTestServers();
+        [serverRows] = await pool.execute('SELECT serverID FROM servers LIMIT 3');
+      }
+    } catch (e) {
+      console.error('Error fetching servers:', e);
+      serverRows = [];
     }
     
-    // Get existing request IDs to avoid duplicates
-    const [existingRequests] = await pool.execute('SELECT requestID FROM requests');
-    const existingIds = new Set(existingRequests.map(row => row.requestID));
+    // Clear existing requests if forcing recreation
+    if (forceCreate) {
+      try {
+        console.log('Forcing test data recreation - clearing existing requests');
+        await pool.execute('DELETE FROM requests');
+        console.log('Existing requests cleared');
+      } catch (clearErr) {
+        console.error('Error clearing existing requests:', clearErr);
+      }
+    }
     
     // Create sample requests
+    const testUsers = await pool.execute('SELECT userID FROM users LIMIT 10');
+    const userIDs = testUsers[0].map(u => u.userID);
+    
+    // Sample requests data
     const sampleRequests = [
-      { 
-        requestID: 'req001', 
-        userID: userRows[0]?.userID, 
-        serverID: serverRows[0]?.serverID || null, 
-        type: 'High', 
-        description: 'Need access to the main server for my project', 
-        status: 'pending' 
+      {
+        requestID: 'req001',
+        userID: userIDs[0] || 'student001',
+        serverID: serverRows[0]?.serverID || null,
+        type: 'High',
+        description: 'Access to GPU server for machine learning project',
+        status: 'pending',
       },
-      { 
-        requestID: 'req002', 
-        userID: userRows[0]?.userID, 
-        serverID: serverRows[0]?.serverID || null, 
-        type: 'Medium', 
-        description: 'Requesting additional RAM allocation for computational tasks', 
-        status: 'approved' 
+      {
+        requestID: 'req002',
+        userID: userIDs[1] || userIDs[0] || 'student001',
+        serverID: serverRows[0]?.serverID || null,
+        type: 'Medium',
+        description: 'Additional storage space for design assets',
+        status: 'approved',
       },
-      { 
-        requestID: 'req003', 
-        userID: userRows[1]?.userID || userRows[0]?.userID, 
-        serverID: serverRows[1]?.serverID || serverRows[0]?.serverID || null, 
-        type: 'Low', 
-        description: 'Need to install Python 3.9 and TensorFlow for my research project', 
-        status: 'rejected' 
+      {
+        requestID: 'req003',
+        userID: userIDs[2] || userIDs[0] || 'student001',
+        serverID: serverRows[1]?.serverID || serverRows[0]?.serverID || null,
+        type: 'Low',
+        description: 'Software installation request for data analysis tools',
+        status: 'rejected',
       },
-      { 
-        requestID: 'req004', 
-        userID: userRows[1]?.userID || userRows[0]?.userID, 
-        serverID: serverRows[1]?.serverID || serverRows[0]?.serverID || null, 
-        type: 'High', 
-        description: 'Emergency access to data backup server', 
-        status: 'pending' 
+      {
+        requestID: 'req004',
+        userID: userIDs[0] || 'student001',
+        serverID: serverRows[1]?.serverID || null,
+        type: 'High',
+        description: 'Database access for research project',
+        status: 'pending',
       },
-      { 
-        requestID: 'req005', 
-        userID: userRows[2]?.userID || userRows[0]?.userID, 
-        serverID: serverRows[0]?.serverID || null, 
-        type: 'Medium', 
-        description: 'Request for web server hosting permissions', 
-        status: 'pending' 
+      {
+        requestID: 'req005',
+        userID: userIDs[3] || userIDs[0] || 'student001',
+        serverID: serverRows[0]?.serverID || null,
+        type: 'Medium',
+        description: 'Cloud resources for marketing campaign analysis',
+        status: 'approved',
       },
-      { 
-        requestID: 'req006', 
-        userID: userRows[3]?.userID || userRows[0]?.userID, 
-        serverID: serverRows[0]?.serverID || null, 
-        type: 'Low', 
-        description: 'Need additional storage space for research data', 
-        status: 'pending' 
+      {
+        requestID: 'req006',
+        userID: userIDs[1] || userIDs[0] || 'student001',
+        serverID: serverRows[2]?.serverID || null,
+        type: 'High',
+        description: 'Need access to web server for hosting project',
+        status: 'pending',
+      },
+      {
+        requestID: 'req007',
+        userID: userIDs[4] || userIDs[0] || 'student001',
+        serverID: serverRows[0]?.serverID || null,
+        type: 'Low',
+        description: 'Request for data backup storage increase',
+        status: 'pending',
+      },
+      {
+        requestID: 'req008',
+        userID: userIDs[2] || userIDs[0] || 'student001',
+        serverID: serverRows[1]?.serverID || null,
+        type: 'Medium',
+        description: 'Need to install specialized software for research',
+        status: 'approved',
       }
     ];
     
-    // Insert each request that doesn't already exist
+    // Insert test requests
     let insertedCount = 0;
-    for (const request of sampleRequests) {
-      if (!existingIds.has(request.requestID)) {
-        await pool.execute(
-          'INSERT INTO requests (requestID, userID, serverID, type, description, status) VALUES (?, ?, ?, ?, ?, ?)',
-          [request.requestID, request.userID, request.serverID, request.type, request.description, request.status]
-        );
-        insertedCount++;
-        console.log(`Created test request: ${request.requestID}`);
-      } else {
-        console.log(`Request ${request.requestID} already exists, skipping`);
+    for (const req of sampleRequests) {
+      try {
+        // Check if this request already exists
+        const [existingReq] = await pool.execute('SELECT requestID FROM requests WHERE requestID = ?', [req.requestID]);
+        
+        if (existingReq.length === 0 || forceCreate) {
+          // Use REPLACE INTO to handle both insert and update
+          await pool.execute(
+            'REPLACE INTO requests (requestID, userID, serverID, type, description, status) VALUES (?, ?, ?, ?, ?, ?)',
+            [req.requestID, req.userID, req.serverID, req.type, req.description, req.status]
+          );
+          insertedCount++;
+          console.log(`Created/updated test request: ${req.requestID}`);
+        } else {
+          console.log(`Request ${req.requestID} already exists, skipping`);
+        }
+      } catch (reqErr) {
+        console.error(`Error creating test request ${req.requestID}:`, reqErr);
       }
     }
     
-    console.log(`${insertedCount} test requests created successfully`);
+    console.log(`${insertedCount} test requests processed successfully`);
     return true;
   } catch (error) {
     console.error('Error creating test requests:', error);
@@ -493,9 +565,34 @@ async function getServers() {
 // Get requests with pagination and filtering
 async function getRequests(userID = null, limit = 20, offset = 0, status = null) {
   try {
+    // First, check if the requests table exists
+    const [tableCheck] = await pool.execute('SHOW TABLES LIKE "requests"');
+    if (tableCheck.length === 0) {
+      console.error('Requests table does not exist');
+      // Create tables first
+      await createTables();
+      // Try to create test data
+      await createTestRequests(true);
+    }
+    
+    // Get the count of requests for debugging
+    const [countResult] = await pool.execute('SELECT COUNT(*) as count FROM requests');
+    console.log(`Total requests in database: ${countResult[0].count}`);
+    
+    // Log user ID filtering if any
+    if (userID) {
+      console.log(`Filtering requests for user: ${userID}`);
+      // Check if this user has any requests
+      const [userRequestCount] = await pool.execute(
+        'SELECT COUNT(*) as count FROM requests WHERE userID = ?',
+        [userID]
+      );
+      console.log(`User ${userID} has ${userRequestCount[0].count} requests`);
+    }
+    
     let query = 'SELECT r.*, u.name as userName, s.name as serverName ' +
                 'FROM requests r ' +
-                'JOIN users u ON r.userID = u.userID ' +
+                'LEFT JOIN users u ON r.userID = u.userID ' +
                 'LEFT JOIN servers s ON r.serverID = s.serverID';
     
     const params = [];
@@ -525,16 +622,6 @@ async function getRequests(userID = null, limit = 20, offset = 0, status = null)
     console.log('Executing requests query:', query);
     console.log('With params:', params);
     
-    // First, check if the requests table exists and has data
-    const [tableCheck] = await pool.execute('SHOW TABLES LIKE "requests"');
-    if (tableCheck.length === 0) {
-      console.error('Requests table does not exist');
-      return [];
-    }
-    
-    const [countCheck] = await pool.execute('SELECT COUNT(*) as count FROM requests');
-    console.log(`Total request records in database: ${countCheck[0].count}`);
-    
     // Execute the actual query
     const [rows] = await pool.execute(query, params);
     console.log(`Query returned ${rows.length} requests`);
@@ -542,6 +629,17 @@ async function getRequests(userID = null, limit = 20, offset = 0, status = null)
     // Log the first result for debugging
     if (rows.length > 0) {
       console.log('First request:', JSON.stringify(rows[0]));
+    } else {
+      console.log('No requests found for query');
+      
+      // If we got no results and we're not already filtering by user, try looking at all requests
+      if (!userID && !status) {
+        const [allRequests] = await pool.execute('SELECT * FROM requests LIMIT 10');
+        console.log(`Debug - found ${allRequests.length} total requests in table`);
+        if (allRequests.length > 0) {
+          console.log('Sample request:', JSON.stringify(allRequests[0]));
+        }
+      }
     }
     
     return rows;

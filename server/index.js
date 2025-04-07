@@ -1,4 +1,3 @@
-
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
@@ -12,7 +11,8 @@ const {
   createTestUsers, 
   getRequests,
   updateRequestStatus,
-  createTables 
+  createTables,
+  createTestRequests
 } = require('./database/db');
 
 const app = express();
@@ -26,79 +26,12 @@ app.use(express.json());
 async function initDatabase() {
   try {
     await testConnection();
+    await createTables();
     // Create test users after connection is established
     await createTestUsers();
     console.log('Database initialized successfully');
   } catch (error) {
     console.error('Database initialization error:', error);
-  }
-}
-
-// Helper function to create test requests (if needed)
-async function createTestRequests() {
-  try {
-    // Check if requests table has any records
-    const [requestCount] = await pool.execute('SELECT COUNT(*) as count FROM requests');
-    
-    if (requestCount[0].count === 0) {
-      console.log('No requests found in database, creating test requests...');
-      
-      // Sample request data
-      const testRequests = [
-        {
-          requestID: 'req001',
-          userID: 'student001',
-          type: 'High',
-          description: 'Access to GPU server for machine learning project',
-          status: 'pending',
-        },
-        {
-          requestID: 'req002',
-          userID: 'student002',
-          type: 'Medium',
-          description: 'Additional storage space for design assets',
-          status: 'approved',
-        },
-        {
-          requestID: 'req003',
-          userID: 'student003',
-          type: 'Low',
-          description: 'Software installation request for data analysis tools',
-          status: 'rejected',
-        },
-        {
-          requestID: 'req004',
-          userID: 'student001',
-          type: 'High',
-          description: 'Database access for research project',
-          status: 'pending',
-        },
-        {
-          requestID: 'req005',
-          userID: 'student004',
-          type: 'Medium',
-          description: 'Cloud resources for marketing campaign analysis',
-          status: 'approved',
-        }
-      ];
-      
-      // Insert test requests
-      for (const req of testRequests) {
-        await pool.execute(
-          'INSERT INTO requests (requestID, userID, type, description, status) VALUES (?, ?, ?, ?, ?)',
-          [req.requestID, req.userID, req.type, req.description, req.status]
-        );
-      }
-      
-      console.log('Test requests created successfully');
-      return true;
-    } else {
-      console.log(`Found ${requestCount[0].count} existing requests in database`);
-      return false;
-    }
-  } catch (error) {
-    console.error('Error creating test requests:', error);
-    return false;
   }
 }
 
@@ -328,10 +261,28 @@ app.get('/api/servers', verifyToken, async (req, res) => {
   }
 });
 
+// New endpoint to manually initialize test requests data
+app.post('/api/requests/init', verifyToken, isAdmin, async (req, res) => {
+  try {
+    console.log('Manually initializing test requests data');
+    
+    // First ensure tables exist
+    await createTables();
+    
+    // Force creation of test requests
+    await createTestRequests(true);
+    
+    res.status(200).json({ message: 'Test requests data initialized successfully' });
+  } catch (error) {
+    console.error('Error initializing test requests data:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // API route to get requests (with auth)
 app.get('/api/requests', verifyToken, async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 20;
+    const limit = parseInt(req.query.limit) || 100; // Increased limit for testing
     const offset = parseInt(req.query.offset) || 0;
     const status = req.query.status;
     
@@ -343,15 +294,26 @@ app.get('/api/requests', verifyToken, async (req, res) => {
     
     // Force database tables initialization to ensure requests exist
     await createTables();
-    // Make sure we have test requests
-    await createTestRequests();
+    
+    // Try to create test data if needed
+    try {
+      const [requestCount] = await pool.execute('SELECT COUNT(*) as count FROM requests');
+      console.log(`Current request count in database: ${requestCount[0].count}`);
+      
+      if (requestCount[0].count === 0) {
+        console.log('No requests found - creating test requests');
+        await createTestRequests(true);
+      }
+    } catch (err) {
+      console.error('Error checking request count:', err);
+    }
     
     const requests = await getRequests(userID, limit, offset, status);
     console.log(`Returning ${requests.length} requests`);
     
     if (requests.length === 0) {
-      console.log('No requests found - creating test requests');
-      await createTestRequests();
+      console.log('No requests found after query - trying to create more test data');
+      await createTestRequests(true);
       // Try fetching again
       const retryRequests = await getRequests(userID, limit, offset, status);
       console.log(`After retry: returning ${retryRequests.length} requests`);
