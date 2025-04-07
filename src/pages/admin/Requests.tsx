@@ -17,6 +17,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
 interface Request {
   requestID: string;
@@ -37,6 +39,8 @@ const Requests = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pendingRequests, setPendingRequests] = useState<Request[]>([]);
+  const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const fetchRequests = async () => {
     try {
@@ -48,14 +52,27 @@ const Requests = () => {
       }
       
       console.log("Fetching requests from:", `${API_BASE_URL}/api/requests`);
+      console.log("Using token:", token.substring(0, 20) + "...");
+      
       const response = await fetch(`${API_BASE_URL}/api/requests`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
       
+      if (response.status === 401) {
+        console.error("Authentication token is invalid or expired");
+        // Clear token and redirect to login
+        toast.error("Your session has expired. Please log in again.");
+        logout();
+        navigate("/login");
+        return;
+      }
+      
       if (!response.ok) {
-        throw new Error(`Failed to fetch requests: ${response.statusText}`);
+        const errorText = await response.text();
+        console.error("Response error:", response.status, errorText);
+        throw new Error(`Failed to fetch requests: ${response.statusText}. ${errorText ? `Server response: ${errorText}` : ''}`);
       }
       
       const data = await response.json();
@@ -97,6 +114,13 @@ const Requests = () => {
         body: JSON.stringify({ status: "approved" }),
       });
       
+      if (response.status === 401) {
+        toast.error("Your session has expired. Please log in again.");
+        logout();
+        navigate("/login");
+        return;
+      }
+      
       if (!response.ok) {
         throw new Error(`Failed to approve request: ${response.statusText}`);
       }
@@ -132,6 +156,13 @@ const Requests = () => {
         body: JSON.stringify({ status: "rejected" }),
       });
       
+      if (response.status === 401) {
+        toast.error("Your session has expired. Please log in again.");
+        logout();
+        navigate("/login");
+        return;
+      }
+      
       if (!response.ok) {
         throw new Error(`Failed to reject request: ${response.statusText}`);
       }
@@ -152,11 +183,16 @@ const Requests = () => {
 
   // Format date function
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'medium',
-      timeStyle: 'short'
-    }).format(date);
+    try {
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat('en-US', {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+      }).format(date);
+    } catch (err) {
+      console.error("Date formatting error:", err);
+      return dateString || "Unknown date";
+    }
   };
 
   return (
@@ -185,7 +221,14 @@ const Requests = () => {
             
             {error && (
               <Alert variant="destructive" className="mb-6">
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription>
+                  {error}
+                  {error.includes("Unauthorized") && (
+                    <div className="mt-2 text-sm">
+                      Please try logging out and logging back in to refresh your session token.
+                    </div>
+                  )}
+                </AlertDescription>
               </Alert>
             )}
             

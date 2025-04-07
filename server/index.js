@@ -1,3 +1,4 @@
+
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
@@ -30,6 +31,74 @@ async function initDatabase() {
     console.log('Database initialized successfully');
   } catch (error) {
     console.error('Database initialization error:', error);
+  }
+}
+
+// Helper function to create test requests (if needed)
+async function createTestRequests() {
+  try {
+    // Check if requests table has any records
+    const [requestCount] = await pool.execute('SELECT COUNT(*) as count FROM requests');
+    
+    if (requestCount[0].count === 0) {
+      console.log('No requests found in database, creating test requests...');
+      
+      // Sample request data
+      const testRequests = [
+        {
+          requestID: 'req001',
+          userID: 'student001',
+          type: 'High',
+          description: 'Access to GPU server for machine learning project',
+          status: 'pending',
+        },
+        {
+          requestID: 'req002',
+          userID: 'student002',
+          type: 'Medium',
+          description: 'Additional storage space for design assets',
+          status: 'approved',
+        },
+        {
+          requestID: 'req003',
+          userID: 'student003',
+          type: 'Low',
+          description: 'Software installation request for data analysis tools',
+          status: 'rejected',
+        },
+        {
+          requestID: 'req004',
+          userID: 'student001',
+          type: 'High',
+          description: 'Database access for research project',
+          status: 'pending',
+        },
+        {
+          requestID: 'req005',
+          userID: 'student004',
+          type: 'Medium',
+          description: 'Cloud resources for marketing campaign analysis',
+          status: 'approved',
+        }
+      ];
+      
+      // Insert test requests
+      for (const req of testRequests) {
+        await pool.execute(
+          'INSERT INTO requests (requestID, userID, type, description, status) VALUES (?, ?, ?, ?, ?)',
+          [req.requestID, req.userID, req.type, req.description, req.status]
+        );
+      }
+      
+      console.log('Test requests created successfully');
+      return true;
+    } else {
+      console.log(`Found ${requestCount[0].count} existing requests in database`);
+      return false;
+    }
+  } catch (error) {
+    console.error('Error creating test requests:', error);
+    return false;
   }
 }
 
@@ -93,21 +162,38 @@ app.post('/api/auth/login', async (req, res) => {
 
 // Verify token middleware
 const verifyToken = (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1];
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader) {
+    console.log('No authorization header provided');
+    return res.status(401).json({ message: 'No token provided' });
+  }
+  
+  const token = authHeader.split(' ')[1];
   
   if (!token) {
-    console.log('No token provided');
+    console.log('Invalid authorization header format');
     return res.status(401).json({ message: 'No token provided' });
   }
   
   try {
+    console.log(`Verifying token: ${token.substring(0, 20)}...`);
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
     req.user = decoded;
     console.log('Token verified for user:', decoded.username);
     next();
   } catch (error) {
-    console.error('Token verification error:', error);
-    return res.status(401).json({ message: 'Invalid token' });
+    console.error('Token verification error:', error.name, error.message);
+    
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: 'Token expired' });
+    }
+    
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+    
+    return res.status(401).json({ message: 'Token verification failed' });
   }
 };
 
