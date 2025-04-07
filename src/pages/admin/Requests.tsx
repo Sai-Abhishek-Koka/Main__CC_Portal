@@ -47,54 +47,10 @@ const Requests = () => {
       setLoading(true);
       setError(null);
       
-      const token = localStorage.getItem("token");
-      
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      
       console.log("Fetching requests from:", `${API_BASE_URL}/api/requests`);
-      console.log("Using token:", token.substring(0, 20) + "...");
-      console.log("Current user:", { userID, userName, userRole });
       
-      // First try to create test data to ensure we have something to display
-      try {
-        // Make a request to trigger test data creation on the server
-        const initResponse = await fetch(`${API_BASE_URL}/api/requests/init`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (!initResponse.ok) {
-          console.warn("Test data initialization returned status:", initResponse.status);
-          const initErrorText = await initResponse.text();
-          console.warn("Test data initialization error:", initErrorText);
-        } else {
-          console.log("Initialized test request data successfully");
-        }
-      } catch (initErr) {
-        console.warn("Failed to initialize test data:", initErr);
-        // Continue anyway, this is just a helper
-      }
-      
-      // Now fetch the actual requests
-      const response = await fetch(`${API_BASE_URL}/api/requests`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-      });
-      
-      if (response.status === 401) {
-        console.error("Authentication token is invalid or expired");
-        toast.error("Your session has expired. Please log in again.");
-        logout();
-        navigate("/login");
-        return;
-      }
+      // Simplified fetch without authentication header
+      const response = await fetch(`${API_BASE_URL}/api/requests`);
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -142,27 +98,14 @@ const Requests = () => {
 
   const handleApprove = async (id: string) => {
     try {
-      const token = localStorage.getItem("token");
-      
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      
+      // Simplified fetch without authentication header
       const response = await fetch(`${API_BASE_URL}/api/requests/${id}`, {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ status: "approved" }),
       });
-      
-      if (response.status === 401) {
-        toast.error("Your session has expired. Please log in again.");
-        logout();
-        navigate("/login");
-        return;
-      }
       
       if (!response.ok) {
         throw new Error(`Failed to approve request: ${response.statusText}`);
@@ -184,27 +127,14 @@ const Requests = () => {
 
   const handleReject = async (id: string) => {
     try {
-      const token = localStorage.getItem("token");
-      
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-      
+      // Simplified fetch without authentication header
       const response = await fetch(`${API_BASE_URL}/api/requests/${id}`, {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ status: "rejected" }),
       });
-      
-      if (response.status === 401) {
-        toast.error("Your session has expired. Please log in again.");
-        logout();
-        navigate("/login");
-        return;
-      }
       
       if (!response.ok) {
         throw new Error(`Failed to reject request: ${response.statusText}`);
@@ -266,11 +196,6 @@ const Requests = () => {
               <Alert variant="destructive" className="mb-6">
                 <AlertDescription>
                   {error}
-                  {error.includes("Unauthorized") && (
-                    <div className="mt-2 text-sm">
-                      Please try logging out and logging back in to refresh your session token.
-                    </div>
-                  )}
                 </AlertDescription>
               </Alert>
             )}

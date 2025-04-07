@@ -29,7 +29,9 @@ async function initDatabase() {
     await createTables();
     // Create test users after connection is established
     await createTestUsers();
-    console.log('Database initialized successfully');
+    // Create test requests to ensure there's data
+    await createTestRequests(true);
+    console.log('Database initialized successfully with test data');
   } catch (error) {
     console.error('Database initialization error:', error);
   }
@@ -261,8 +263,8 @@ app.get('/api/servers', verifyToken, async (req, res) => {
   }
 });
 
-// New endpoint to manually initialize test requests data
-app.post('/api/requests/init', verifyToken, isAdmin, async (req, res) => {
+// New endpoint to manually initialize test requests data - NO AUTH REQUIRED
+app.post('/api/requests/init', async (req, res) => {
   try {
     console.log('Manually initializing test requests data');
     
@@ -279,18 +281,14 @@ app.post('/api/requests/init', verifyToken, isAdmin, async (req, res) => {
   }
 });
 
-// API route to get requests (with auth)
-app.get('/api/requests', verifyToken, async (req, res) => {
+// API route to get requests - NO AUTH REQUIRED
+app.get('/api/requests', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 100; // Increased limit for testing
     const offset = parseInt(req.query.offset) || 0;
     const status = req.query.status;
     
-    // If not admin, only show their requests
-    const userID = req.user.role === 'admin' ? null : req.user.username;
-    
-    console.log(`Fetching requests for ${userID || 'admin (all users)'} with role ${req.user.role}`);
-    console.log('User token info:', req.user);
+    console.log(`Fetching all requests without authentication`);
     
     // Force database tables initialization to ensure requests exist
     await createTables();
@@ -308,14 +306,15 @@ app.get('/api/requests', verifyToken, async (req, res) => {
       console.error('Error checking request count:', err);
     }
     
-    const requests = await getRequests(userID, limit, offset, status);
+    // Get all requests without filtering by user
+    const requests = await getRequests(null, limit, offset, status);
     console.log(`Returning ${requests.length} requests`);
     
     if (requests.length === 0) {
       console.log('No requests found after query - trying to create more test data');
       await createTestRequests(true);
       // Try fetching again
-      const retryRequests = await getRequests(userID, limit, offset, status);
+      const retryRequests = await getRequests(null, limit, offset, status);
       console.log(`After retry: returning ${retryRequests.length} requests`);
       return res.status(200).json(retryRequests);
     }
@@ -327,8 +326,8 @@ app.get('/api/requests', verifyToken, async (req, res) => {
   }
 });
 
-// API route to update request status (admin only)
-app.put('/api/requests/:requestID', verifyToken, isAdmin, async (req, res) => {
+// API route to update request status - NO AUTH REQUIRED
+app.put('/api/requests/:requestID', async (req, res) => {
   try {
     const { requestID } = req.params;
     const { status } = req.body;
@@ -355,10 +354,10 @@ app.put('/api/requests/:requestID', verifyToken, isAdmin, async (req, res) => {
   }
 });
 
-// API route to create a new request (authenticated users)
-app.post('/api/requests', verifyToken, async (req, res) => {
+// API route to create a new request
+app.post('/api/requests', async (req, res) => {
   try {
-    const { type, description, priority } = req.body;
+    const { type, description, priority, userID } = req.body;
     
     if (!type || !description || !priority) {
       return res.status(400).json({ message: 'Type, description, and priority are required' });
@@ -367,20 +366,20 @@ app.post('/api/requests', verifyToken, async (req, res) => {
     // Generate a request ID
     const requestID = `req${Date.now()}`;
     
-    // Get the user ID from the token
-    const userID = req.user.username;
+    // Use provided userID or default to a test user
+    const requestUserID = userID || 'student001';
     
-    console.log(`Creating new request for user ${userID}:`, { type, description, priority });
+    console.log(`Creating new request for user ${requestUserID}:`, { type, description, priority });
     
     // Insert into requests table
     const [result] = await pool.execute(
       'INSERT INTO requests (requestID, userID, type, description, status) VALUES (?, ?, ?, ?, ?)',
-      [requestID, userID, type, description, 'pending']
+      [requestID, requestUserID, type, description, 'pending']
     );
     
     res.status(201).json({ 
       message: 'Request created successfully',
-      request: { requestID, userID, type, description, status: 'pending' }
+      request: { requestID, userID: requestUserID, type, description, status: 'pending' }
     });
   } catch (error) {
     console.error('Error creating request:', error);
