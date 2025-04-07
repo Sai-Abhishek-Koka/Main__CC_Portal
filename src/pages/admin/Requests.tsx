@@ -40,7 +40,7 @@ const Requests = () => {
   const [error, setError] = useState<string | null>(null);
   const [pendingRequests, setPendingRequests] = useState<Request[]>([]);
   const navigate = useNavigate();
-  const { logout, user } = useAuth();
+  const { logout, userID, userName, userRole } = useAuth();
 
   const fetchRequests = async () => {
     try {
@@ -55,19 +55,26 @@ const Requests = () => {
       
       console.log("Fetching requests from:", `${API_BASE_URL}/api/requests`);
       console.log("Using token:", token.substring(0, 20) + "...");
-      console.log("Current user:", user);
+      console.log("Current user:", { userID, userName, userRole });
       
       // First try to create test data to ensure we have something to display
       try {
         // Make a request to trigger test data creation on the server
-        await fetch(`${API_BASE_URL}/api/requests/init`, {
+        const initResponse = await fetch(`${API_BASE_URL}/api/requests/init`, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
-        console.log("Initialized test request data");
+        
+        if (!initResponse.ok) {
+          console.warn("Test data initialization returned status:", initResponse.status);
+          const initErrorText = await initResponse.text();
+          console.warn("Test data initialization error:", initErrorText);
+        } else {
+          console.log("Initialized test request data successfully");
+        }
       } catch (initErr) {
         console.warn("Failed to initialize test data:", initErr);
         // Continue anyway, this is just a helper
